@@ -1,0 +1,12 @@
+# requirements.txt (versión manual)
+streamlit
+opencv-python
+mediapipe
+pillow
+numpy
+
+# ---
+# FIX: Forzar la versión de protobuf
+# para compatibilidad con mediapipe 0.10.x
+protobuf==3.20.3
+# ---
