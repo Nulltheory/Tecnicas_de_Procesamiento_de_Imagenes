@@ -4,9 +4,9 @@ Aplicación Streamlit para detección de landmarks faciales.
 """
 import streamlit as st
 from PIL import Image
-from scr.detector import FaceLandmarkDetector
-from scr.utils import pil_to_cv2, cv2_to_pil, resize_image
-from scr.config import TOTAL_LANDMARKS
+from src.detector import FaceLandmarkDetector
+from src.utils import pil_to_cv2, cv2_to_pil, resize_image
+from src.config import TOTAL_LANDMARKS
 
 
 # Configuración de la página
