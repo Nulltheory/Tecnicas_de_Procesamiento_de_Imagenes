@@ -87,6 +87,7 @@ Sigue estos pasos para ejecutar la aplicación en tu máquina local.
 
 ## 🎓 Autor
 
+Alumno: Alejandro Schiariti
 Desarrollado como parte del **Laboratorio 2** de la materia **Procesamiento Digital de Imágenes** (IFTS24).
 
 ---
