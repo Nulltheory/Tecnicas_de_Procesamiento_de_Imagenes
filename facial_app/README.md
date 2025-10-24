@@ -1,23 +1,45 @@
+---
+title: Facial Landmarks App
+emoji: 🚀
+colorFrom: red
+colorTo: red
+sdk: docker
+app_port: 8501
+tags:
+- streamlit
+pinned: false
+short_description: Facial Landmarks App
+license: mit
+---
+
 #  Detector de Landmarks Faciales 👁️👄
 
 Aplicación web interactiva para detectar 478 puntos clave (landmarks) en rostros humanos, construida con MediaPipe y Streamlit.
 
 ---
 
-## 🚀 Características Principales
+## 🚀 Aplicación Desplegada
 
--   **Detección de Alta Precisión:** Identifica 478 landmarks faciales usando el modelo Face Mesh de MediaPipe.
--   **Interfaz Web Interactiva:** Permite a los usuarios subir sus propias imágenes para analizarlas.
--   **Visualización Clara:** Muestra una comparación lado a lado de la imagen original y la imagen con los landmarks dibujados.
+Puedes probar la aplicación en vivo haciendo clic en el siguiente enlace:
+
+**[👉 Acceder al Detector en Hugging Face Spaces](https://huggingface.co/spaces/Nulltheory/Facial_Landmarks_App)**
+
+---
+
+## ✨ Características Principales
+
+- **Detección de Alta Precisión:** Identifica 478 landmarks faciales usando el modelo Face Mesh de MediaPipe.
+- **Interfaz Web Interactiva:** Permite a los usuarios subir sus propias imágenes para analizarlas.
+- **Visualización Clara:** Muestra una comparación lado a lado de la imagen original y la imagen con los landmarks dibujados.
 
 ---
 
 ## 🛠️ Tecnologías Utilizadas
 
--   **Python 3.11+**
--   **MediaPipe**: Para el modelo de detección de landmarks.
--   **OpenCV**: Para el procesamiento de imágenes (lectura, dibujo de círculos).
--   **Streamlit**: Para la creación de la interfaz web.
+- **Python 3.11+**
+- **MediaPipe**: Para el modelo de detección de landmarks.
+- **OpenCV**: Para el procesamiento de imágenes (lectura, dibujo de círculos).
+- **Streamlit**: Para la creación de la interfaz web.
 
 ---
 
@@ -57,23 +79,11 @@ Sigue estos pasos para ejecutar la aplicación en tu máquina local.
 
 ---
 
-## ☁️ Deployment en Streamlit Community Cloud
-
-Puedes hostear esta aplicación gratis siguiendo estos pasos:
-
-1.  Sube todo tu código (incluyendo `app.py`, `requirements.txt` y tu `.gitignore`) a un repositorio público en GitHub.
-2.  Ve a [Streamlit Community Cloud](https://share.streamlit.io/) e inicia sesión.
-3.  Haz clic en "**New app**" y conecta tu repositorio de GitHub.
-4.  Asegúrate de que la rama (`main` o `master`) y el archivo principal (`app.py`) estén correctos.
-5.  ¡Haz clic en "**Deploy!**".
-
----
-
 ## 📚 Documentación y Recursos
 
--   [MediaPipe Face Landmarker](https://developers.google.com/mediapipe/solutions/vision/face_landmarker)
--   [Documentación Oficial de Streamlit](https://docs.streamlit.io/)
--   Kilo Code
+- [MediaPipe Face Landmarker](https://developers.google.com/mediapip/solutions/vision/face_landmarker)
+- [Documentación Oficial de Streamlit](https://docs.streamlit.io/)
+- Kilo Code
 
 ## 🎓 Autor
 
