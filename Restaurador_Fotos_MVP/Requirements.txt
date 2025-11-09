@@ -1,7 +1,4 @@
-# Requisitos optimizados para Streamlit Cloud
-torch
-torchvision
-torchaudio
+# Requisitos mínimos para Streamlit Cloud - PyTorch preinstalado
 numpy
 pillow
 opencv-python-headless

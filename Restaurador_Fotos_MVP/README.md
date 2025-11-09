@@ -147,6 +147,9 @@ docker run -p 8501:8501 restaurador-ai
 
 ### 💻 Uso Local (Desarrollo)
 ```bash
+# Instalar PyTorch primero (importante)
+pip install torch torchvision torchaudio
+
 # Instalar dependencias
 pip install -r requirements.txt
 

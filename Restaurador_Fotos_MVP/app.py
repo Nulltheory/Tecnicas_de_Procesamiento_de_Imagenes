@@ -23,24 +23,27 @@ try:
     import torch
     torch_available = True
     version = torch.__version__
-    st.success(f"✅ PyTorch {version} disponible y funcional")
+    st.success(f"✅ PyTorch {version} disponible")
     if torch.cuda.is_available():
-        st.info(f"🎯 CUDA: {torch.cuda.get_device_name(0)}")
+        st.info(f"🎯 CUDA disponible: {torch.cuda.get_device_name(0)}")
     else:
-        st.info("💻 Modo CPU - Procesamiento más lento pero funcional")
+        st.info("💻 Modo CPU - funcional")
     # Verificar que torch funciona realmente
     test_tensor = torch.tensor([1.0, 2.0, 3.0])
     result = test_tensor.sum().item()
     st.info(f"🔧 Test PyTorch: {result:.0f} ✓")
 except (ImportError, Exception) as e:
     torch_available = False
-    st.error("❌ ERROR CRÍTICO: PyTorch no disponible")
-    st.error("La aplicación NO puede funcionar sin PyTorch.")
+    st.error("❌ PyTorch no disponible")
+    st.error("Streamlit Cloud debería tener PyTorch preinstalado.")
     st.error("Posibles soluciones:")
-    st.error("• Verificar instalación de dependencias")
-    st.error("• Contactar soporte de la plataforma de despliegue")
-    st.error("• Revisar logs de construcción")
-    st.stop()
+    st.error("• Esperar a que termine la instalación")
+    st.error("• Verificar logs de despliegue")
+    st.error("• Contactar soporte de Streamlit Cloud")
+    st.info("🔄 Reintentando en 10 segundos...")
+    import time
+    time.sleep(10)
+    st.rerun()
 
 # Importaciones de módulos locales - REQUIEREN PyTorch
 try:
