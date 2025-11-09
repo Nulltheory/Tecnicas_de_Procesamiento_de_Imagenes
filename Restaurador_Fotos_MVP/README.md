@@ -42,7 +42,15 @@ Transforma fotos antiguas dañadas con IA avanzada y obtén análisis detallado 
 
 Esta aplicación requiere PyTorch y puede desplegarse en varias plataformas gratuitas:
 
-#### 1️⃣ **Hugging Face Spaces (Recomendado)**
+#### 1️⃣ **Streamlit Cloud (Recomendado para PyTorch)**
+- ✅ **Ir a** [Streamlit Cloud](https://streamlit.io/cloud)
+- ✅ **Conectar con GitHub** y seleccionar el repositorio
+- ✅ **Configurar secrets** en el panel de settings:
+  - `GEMINI_API_KEY`: Para análisis con Gemini AI
+  - `HF_TOKEN`: Para modelos avanzados de CLIP
+- ✅ **¡Listo!** Despliegue automático optimizado para Streamlit + PyTorch
+
+#### 2️⃣ **Hugging Face Spaces (Alternativa)**
 - ✅ **Crear un Space** en [Hugging Face Spaces](https://huggingface.co/spaces)
 - ✅ **Subir los archivos** del proyecto al repositorio
 - ✅ **Configurar Secrets** (opcional):
@@ -142,9 +150,28 @@ docker run -p 8501:8501 restaurador-ai
 # Instalar dependencias
 pip install -r requirements.txt
 
+# Configurar variables de entorno (opcional)
+export GEMINI_API_KEY="tu-api-key-aqui"
+export HF_TOKEN="tu-huggingface-token-aqui"
+
 # Ejecutar la aplicación
 streamlit run app.py
 ```
+
+### 🔧 **Solución de Problemas**
+
+**Si PyTorch no funciona:**
+- **Streamlit Cloud**: Contactar soporte de Streamlit
+- **HF Spaces**: Verificar logs de construcción
+- **Local**: Instalar PyTorch manualmente
+
+**Si faltan dependencias:**
+- Ejecutar: `pip install --upgrade pip`
+- Reinstalar: `pip install -r requirements.txt --force-reinstall`
+
+**Si hay errores de memoria:**
+- Reducir tamaño de imagen de entrada
+- Usar CPU en lugar de GPU
 
 ##  Guía de Uso
 

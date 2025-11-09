@@ -36,7 +36,10 @@ except (ImportError, Exception) as e:
     torch_available = False
     st.error("❌ ERROR CRÍTICO: PyTorch no disponible")
     st.error("La aplicación NO puede funcionar sin PyTorch.")
-    st.error("Contacte soporte de Hugging Face Spaces para resolver este problema.")
+    st.error("Posibles soluciones:")
+    st.error("• Verificar instalación de dependencias")
+    st.error("• Contactar soporte de la plataforma de despliegue")
+    st.error("• Revisar logs de construcción")
     st.stop()
 
 # Importaciones de módulos locales - REQUIEREN PyTorch
