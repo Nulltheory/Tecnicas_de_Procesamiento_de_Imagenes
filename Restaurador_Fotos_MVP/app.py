@@ -100,13 +100,13 @@ st.sidebar.markdown(f"**Estado:** {' | '.join(api_status)}")
 with st.sidebar.expander("🔑 Configurar APIs", expanded=False):
     st.markdown("**HuggingFace Token** (Opcional)")
     st.markdown("*Para modelos avanzados de CLIP*")
-    hf_token = st.text_input("Token HF", value=os.getenv("HF_TOKEN", ""),
+    hf_token = st.text_input("Token HF", type="password", value=os.getenv("HF_TOKEN", ""),
                             help="Obtén gratis en huggingface.co/settings/tokens", key="hf_token", disabled=True)
 
     st.markdown("---")
     st.markdown("**Gemini API Key**")
     st.markdown("*Para análisis detallado con IA*")
-    gemini_api_key = st.text_input("API Key Gemini", value=os.getenv("GEMINI_API_KEY", ""),
+    gemini_api_key = st.text_input("API Key Gemini", type="password", value=os.getenv("GEMINI_API_KEY", ""),
                                   help="Obtén gratis en makersuite.google.com/app/apikey", key="gemini_key", disabled=True)
 
     st.info("🔒 Campos bloqueados por seguridad. Las claves se configuran vía variables de entorno del sistema.")
@@ -204,6 +204,17 @@ if usar_preset_basico:
     usar_colorization = modules_available or True
     usar_sd = False
 
+    # Variables por defecto para modo básico
+    realesrgan_model = "x4plus"
+    codeformer_fidelity = 0.7
+    codeformer_upscale = 1
+    gfpgan_upscale = 1
+    sd_strength = 0.5
+    sd_steps = 15
+    denoise_strength = 1
+    scratch_sensitivity = 2
+    color_boost = 0.7
+
     st.sidebar.success("✅ **Modo Básico Activado**")
     with st.sidebar.expander("📋 Qué incluye", expanded=False):
         st.markdown("""
@@ -246,6 +257,17 @@ elif usar_preset_avanzado:
         usar_border_enhancement = modules_available or True
         usar_colorization = modules_available or True
         usar_sd = False
+
+        # Variables por defecto para preset avanzado
+        realesrgan_model = "x4plus"
+        codeformer_fidelity = 0.7
+        codeformer_upscale = 1
+        gfpgan_upscale = 1
+        sd_strength = 0.5
+        sd_steps = 15
+        denoise_strength = 1
+        scratch_sensitivity = 2
+        color_boost = 0.7
 
         st.sidebar.success("✅ **Configuración Avanzada Equilibrada Activada**")
         with st.sidebar.expander("📋 Pipeline Avanzado Completo", expanded=False):
@@ -324,6 +346,17 @@ elif usar_preset_avanzado:
     else:
         # Configuración completamente manual
         st.sidebar.markdown("**🎯 Configuración Manual Completa**")
+
+        # Variables por defecto para configuración manual
+        realesrgan_model = "x4plus"
+        codeformer_fidelity = 0.7
+        codeformer_upscale = 1
+        gfpgan_upscale = 1
+        sd_strength = 0.5
+        sd_steps = 15
+        denoise_strength = 2
+        scratch_sensitivity = 3
+        color_boost = 0.9
 
         # Paso 1: Base y upscaling
         with st.sidebar.expander("1️⃣ Base y Upscaling", expanded=True):
@@ -642,4 +675,3 @@ if imagen_cargada:
                 mime="image/png"
 
             )
-
