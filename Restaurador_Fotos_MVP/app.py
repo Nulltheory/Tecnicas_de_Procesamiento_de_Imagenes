@@ -681,12 +681,52 @@ if imagen_cargada:
         usar_clip_final = usar_clip if 'usar_clip' in locals() else torch_available
 
         if usar_gemini_final and modules_available:
-             st.info("Generando análisis comparativo con Gemini...")
-             # Código para llamar a analizar_con_gemini_comparativo(img_pil, imagen_restaurada)
+            try:
+                st.info("🤖 Generando análisis comparativo con Gemini...")
+                # Convertir imágenes a bytes para el análisis
+                img_original_bytes = io.BytesIO()
+                img_pil.save(img_original_bytes, format='PNG')
+                img_original_bytes = img_original_bytes.getvalue()
+
+                img_restaurada_bytes = io.BytesIO()
+                imagen_restaurada.save(img_restaurada_bytes, format='PNG')
+                img_restaurada_bytes = img_restaurada_bytes.getvalue()
+
+                # Llamar a la función de análisis comparativo
+                gemini_api_key = os.getenv("GEMINI_API_KEY", "")
+                if gemini_api_key:
+                    analisis_gemini = analizar_con_gemini_comparativo(img_original_bytes, img_restaurada_bytes, gemini_api_key)
+                    st.success("✅ Análisis Gemini completado")
+                    with st.expander("📋 Resultado del Análisis Gemini", expanded=True):
+                        st.write(analisis_gemini)
+                else:
+                    st.warning("⚠️ API Key de Gemini no configurada - análisis omitido")
+            except Exception as e:
+                st.error(f"❌ Error en análisis Gemini: {e}")
 
         if usar_clip_final and modules_available and torch_available:
-            st.info("Clasificando calidad con CLIP...")
-            # Código para llamar a analizar_calidad_clip(imagen_restaurada)
+            try:
+                st.info("🎯 Clasificando calidad con CLIP...")
+                # Convertir imagen restaurada a bytes para CLIP
+                img_restaurada_bytes = io.BytesIO()
+                imagen_restaurada.save(img_restaurada_bytes, format='PNG')
+                img_restaurada_bytes = img_restaurada_bytes.getvalue()
+
+                # Llamar a la función de clasificación CLIP
+                resultado_clip = analizar_calidad_clip(img_restaurada_bytes)
+
+                if "error" not in resultado_clip:
+                    st.success("✅ Clasificación CLIP completada")
+                    with st.expander("📊 Resultado de Clasificación CLIP", expanded=True):
+                        for key, value in resultado_clip.items():
+                            if isinstance(value, dict):
+                                st.write(f"**{key.replace('_', ' ').title()}:** {value['categoria']} ({value['probabilidad']})")
+                            else:
+                                st.write(f"**{key}:** {value}")
+                else:
+                    st.error(f"❌ Error en clasificación CLIP: {resultado_clip['error']}")
+            except Exception as e:
+                st.error(f"❌ Error en análisis CLIP: {e}")
 
         # Botón de descarga prominente
         st.markdown("### ⬇️ Descargar Imagen Restaurada")
