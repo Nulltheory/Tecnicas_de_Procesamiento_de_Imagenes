@@ -136,7 +136,7 @@ modo_seleccionado = st.sidebar.radio(
     "Selecciona el modo de funcionamiento:",
     ["Modo Básico (Recomendado)", "Modo Avanzado"],
     index=0,  # Básico por defecto
-    help="Modo Básico: 4 fases automáticas con reparación estructural | Modo Avanzado: Control manual completo por fases"
+    help="Modo Básico: Reparación estructural conservadora | Modo Avanzado: Control completo con ajustes tonales"
 )
 
 usar_preset_basico = (modo_seleccionado == "Modo Básico (Recomendado)")
@@ -212,15 +212,15 @@ elif usar_preset_avanzado:
             - 🩹 **Reparación completa**: Eliminación de arañazos y manchas blancas
 
             **🎨 Fase 3: Mejoras Tonales Avanzadas**
-            - 🎨 **Retoque**: Color y contraste optimizados
-            - 🔍 **CLAHE**: Contraste adaptativo para definición local
-            - 🔇 **Reducción de ruido**: Nivel avanzado
+            - 🎨 **Retoque de color**: Ajustable (0.5-2.0, defecto 0.7)
+            - 🔍 **CLAHE**: Contraste adaptativo local
+            - 🔇 **Reducción de ruido**: Ajustable (1-5, defecto 1)
 
             **✨ Fase 4: Acabado Final**
             - ⚡ **Afilado**: Realce final de detalles
             - 🎯 **Definición**: Bordes y colorización básica
 
-            *Más algoritmos que el modo básico, pero con parámetros seguros*
+            *Control completo con ajustes personalizables*
             """)
     else:
         # Configuración completamente manual
@@ -376,12 +376,14 @@ with st.sidebar.expander("🚀 Guía Rápida", expanded=False):
 
     **Para Principiantes:**
     - Modo: Básico (Recomendado)
+    - **Enfoque**: Reparación estructural conservadora
     - Análisis: Activar Gemini para evaluación
-    - Resultado: Restauración natural y segura
+    - Resultado: Restauración natural sin alteraciones agresivas
 
     **Para Fotos Complejas:**
     - Modo: Avanzado con preset rápido
-    - **Fase 2 incluida**: Reparación estructural automática (arañazos y manchas)
+    - **Fase 2 incluida**: Reparación estructural automática
+    - **Ajustes disponibles**: Retoque de color, CLAHE, denoising avanzado
     - Análisis: Ambos (CLIP + Gemini) para evaluación completa
 
     **💡 Pro Tip:** Empieza con Modo Básico, si no satisface, prueba Avanzado
