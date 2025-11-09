@@ -12,6 +12,7 @@ torchaudio==2.2.2+cpu
 
 # --- Dependencias del sistema ---
 opencv-python-headless==4.11.0.86
+libgl1-mesa-glx
 
 # --- Bibliotecas de IA / Restauración facial ---
 basicsr==1.4.2
