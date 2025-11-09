@@ -85,7 +85,6 @@ def analizar_con_gemini(gemini_api_key: str, imagen_bytes: bytes) -> str:
 @st.cache_resource
 def load_clip_model():
     # CLIP no funciona bien en Streamlit Cloud, devolver None para graceful degradation
-    st.info("ℹ️ CLIP requiere configuración adicional en Streamlit Cloud. Usando solo análisis Gemini por ahora.")
     return None, None
 
 
