@@ -185,6 +185,20 @@ modo_seleccionado = st.sidebar.radio(
     help="Modo Básico: Reparación estructural conservadora | Modo Avanzado: Control completo con ajustes tonales"
 )
 
+# --- Análisis de Calidad ---
+st.sidebar.markdown("### 📊 Análisis de Calidad")
+
+usar_gemini = st.sidebar.checkbox("Análisis Gemini", value=True, help="Análisis detallado y positivo con IA")
+usar_clip = st.sidebar.checkbox("Clasificación CLIP", value=torch_available,
+                              disabled=not torch_available,
+                              help="Análisis automático de contenido y calidad (requiere PyTorch)" if not torch_available else "Análisis automático de contenido y calidad")
+
+# Variables por defecto para análisis (asegurarse de que estén definidas)
+if 'usar_gemini' not in locals():
+    usar_gemini = True
+if 'usar_clip' not in locals():
+    usar_clip = torch_available
+
 usar_preset_basico = (modo_seleccionado == "Modo Básico (Recomendado)")
 usar_preset_avanzado = (modo_seleccionado == "Modo Avanzado")
 
