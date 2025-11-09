@@ -617,11 +617,12 @@ if imagen_cargada:
 
         # Usar la función de utilidad para la descarga
         try:
-            mostrar_resultado_con_descarga(imagen_restaurada)
+            mostrar_resultado_con_descarga(imagen_restaurada, "imagen_restaurada.png")
         except NameError:
              st.download_button(
                 label="⬇️ Descargar Imagen Restaurada",
                 data=io.BytesIO(imagen_restaurada.tobytes()), # Simplificado para funcionar sin la utilidad
                 file_name="foto_restaurada.png",
                 mime="image/png"
+
             )
