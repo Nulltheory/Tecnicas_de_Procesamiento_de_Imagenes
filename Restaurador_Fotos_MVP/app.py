@@ -488,10 +488,11 @@ if imagen_cargada:
 
         # 1️⃣ Redimensionado / Upscaling (Real-ESRGAN)
         if usar_realesrgan and torch_available and modules_available:
-            with st.spinner(f"Aplicando upscaling con Real-ESRGAN ({realesrgan_model}) x4..."):
+            with st.spinner(f"Aplicando upscaling con Real-ESRGAN ({realesrgan_model if 'realesrgan_model' in locals() else 'x4plus'}) x4..."):
                 try:
                     img_antes_upscale = img_pil.copy()
-                    imagen_restaurada = upscale_imagen_realesrgan(imagen_restaurada, model_type=realesrgan_model)
+                    model_type = realesrgan_model if 'realesrgan_model' in locals() else "x4plus"
+                    imagen_restaurada = upscale_imagen_realesrgan(imagen_restaurada, model_type=model_type)
                     st.success("✅ Real-ESRGAN aplicado exitosamente")
                     procesamiento_aplicado = True
                 except Exception as e:
@@ -499,24 +500,28 @@ if imagen_cargada:
 
         # 2️⃣ Restauración facial (CodeFormer / GFPGAN)
         if usar_codeformer and torch_available and modules_available:
-            with st.spinner(f"Restaurando con CodeFormer (fidelidad={codeformer_fidelity}, upscale={codeformer_upscale})..."):
+            fidelity = codeformer_fidelity if 'codeformer_fidelity' in locals() else 0.7
+            upscale = codeformer_upscale if 'codeformer_upscale' in locals() else 1
+            with st.spinner(f"Restaurando con CodeFormer (fidelidad={fidelity}, upscale={upscale})..."):
                 try:
-                    imagen_restaurada = restaurar_imagen_codeformer(imagen_restaurada, fidelity=codeformer_fidelity, upscale_factor=codeformer_upscale)
+                    imagen_restaurada = restaurar_imagen_codeformer(imagen_restaurada, fidelity=fidelity, upscale_factor=upscale)
                     st.success("✅ CodeFormer aplicado exitosamente")
                     procesamiento_aplicado = True
                 except Exception as e:
                     st.warning(f"Error con CodeFormer: {e}. Intentando con GFPGAN (si está activado)...")
                     if usar_gfpgan:
                         try:
-                            imagen_restaurada = restaurar_imagen_gfpgan(imagen_restaurada, upscale_factor=gfpgan_upscale)
+                            upscale_gfpgan = gfpgan_upscale if 'gfpgan_upscale' in locals() else 1
+                            imagen_restaurada = restaurar_imagen_gfpgan(imagen_restaurada, upscale_factor=upscale_gfpgan)
                             st.success("✅ GFPGAN aplicado exitosamente (fallback)")
                             procesamiento_aplicado = True
                         except Exception as e2:
                             st.error(f"Error durante la restauración: {e2}")
         elif usar_gfpgan and torch_available and modules_available:
-            with st.spinner(f"Restaurando rostros con GFPGAN (upscale={gfpgan_upscale})..."):
+            upscale_gfpgan = gfpgan_upscale if 'gfpgan_upscale' in locals() else 1
+            with st.spinner(f"Restaurando rostros con GFPGAN (upscale={upscale_gfpgan})..."):
                 try:
-                    imagen_restaurada = restaurar_imagen_gfpgan(imagen_restaurada, upscale_factor=gfpgan_upscale)
+                    imagen_restaurada = restaurar_imagen_gfpgan(imagen_restaurada, upscale_factor=upscale_gfpgan)
                     st.success("✅ GFPGAN aplicado exitosamente")
                     procesamiento_aplicado = True
                 except Exception as e:
@@ -527,9 +532,10 @@ if imagen_cargada:
 
         # 3️⃣ Eliminación de arañazos (Inpainting)
         if usar_scratch_removal and torch_available and modules_available:
-            with st.spinner(f"Aplicando eliminación de arañazos (sensibilidad: {scratch_sensitivity})..."):
+            sensitivity = scratch_sensitivity if 'scratch_sensitivity' in locals() else 2
+            with st.spinner(f"Aplicando eliminación de arañazos (sensibilidad: {sensitivity})..."):
                 try:
-                    imagen_restaurada = inpainting_aranasos_agresivo(imagen_restaurada, sensitivity=scratch_sensitivity)
+                    imagen_restaurada = inpainting_aranasos_agresivo(imagen_restaurada, sensitivity=sensitivity)
                     st.success("✅ Eliminación de arañazos aplicada exitosamente")
                     procesamiento_aplicado = True
                 except Exception as e:
@@ -550,9 +556,10 @@ if imagen_cargada:
 
         # 5️⃣ Retoque de color y contraste global
         if usar_retouching and modules_available:
-            with st.spinner(f"Aplicando retoque de color (intensidad: {color_boost:.1f})..."):
+            intensity = color_boost if 'color_boost' in locals() else 0.7
+            with st.spinner(f"Aplicando retoque de color (intensidad: {intensity:.1f})..."):
                 try:
-                    imagen_restaurada = mejorar_color_contraste(imagen_restaurada, intensity=color_boost)
+                    imagen_restaurada = mejorar_color_contraste(imagen_restaurada, intensity=intensity)
                     st.success("✅ Retoque de color aplicado exitosamente")
                     procesamiento_aplicado = True
                 except Exception as e:
@@ -570,9 +577,10 @@ if imagen_cargada:
 
         # 7️⃣ Reducción de ruido (denoise)
         if usar_denoise and modules_available:
-            with st.spinner(f"Aplicando reducción de ruido (intensidad: {denoise_strength})..."):
+            strength = denoise_strength if 'denoise_strength' in locals() else 1
+            with st.spinner(f"Aplicando reducción de ruido (intensidad: {strength})..."):
                 try:
-                    imagen_restaurada = reducir_ruido_avanzado(imagen_restaurada, strength=denoise_strength)
+                    imagen_restaurada = reducir_ruido_avanzado(imagen_restaurada, strength=strength)
                     st.success("✅ Reducción de ruido aplicada exitosamente")
                     procesamiento_aplicado = True
                 except Exception as e:
@@ -612,10 +620,12 @@ if imagen_cargada:
 
         # 🔟 Stable Diffusion (opcional)
         if usar_sd and torch_available and modules_available:
-            with st.spinner(f"Aplicando Stable Diffusion (fuerza: {sd_strength}, pasos: {sd_steps})..."):
+            strength = sd_strength if 'sd_strength' in locals() else 0.5
+            steps = sd_steps if 'sd_steps' in locals() else 15
+            with st.spinner(f"Aplicando Stable Diffusion (fuerza: {strength}, pasos: {steps})..."):
                 try:
                     imagen_antes_sd = imagen_restaurada.copy()  # Guardar estado antes de SD
-                    imagen_restaurada = restaurar_imagen_sd(imagen_restaurada, hf_token or "", strength=sd_strength, steps=sd_steps)
+                    imagen_restaurada = restaurar_imagen_sd(imagen_restaurada, hf_token or "", strength=strength, steps=steps)
                     st.success("✅ Stable Diffusion aplicado exitosamente")
                     procesamiento_aplicado = True
                 except Exception as e:
@@ -667,11 +677,14 @@ if imagen_cargada:
         st.markdown("### 🤖 Análisis de Calidad con IA")
 
         # Aquí iría el código para el análisis (analizar_con_gemini, etc.)
-        if usar_gemini and modules_available:
+        usar_gemini_final = usar_gemini if 'usar_gemini' in locals() else True
+        usar_clip_final = usar_clip if 'usar_clip' in locals() else torch_available
+
+        if usar_gemini_final and modules_available:
              st.info("Generando análisis comparativo con Gemini...")
              # Código para llamar a analizar_con_gemini_comparativo(img_pil, imagen_restaurada)
 
-        if usar_clip and modules_available and torch_available:
+        if usar_clip_final and modules_available and torch_available:
             st.info("Clasificando calidad con CLIP...")
             # Código para llamar a analizar_calidad_clip(imagen_restaurada)
 
