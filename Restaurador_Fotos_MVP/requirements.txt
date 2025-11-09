@@ -1,18 +1,19 @@
-# --- Dependencias del sistema ---
-opencv-python-headless==4.11.0.86
-
 # --- Streamlit y utilidades ---
 streamlit==1.40.1
 numpy<2
 Pillow
 tqdm
 
-# --- PyTorch CPU (versión PyPI compatible con Streamlit Cloud) ---
-torch==2.2.2
-torchvision==0.17.2
-torchaudio==2.2.2
+# --- PyTorch CPU (versión estable compatible con Streamlit Cloud) ---
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.2.2+cpu
+torchvision==0.17.2+cpu
+torchaudio==2.2.2+cpu
 
-# --- Bibliotecas de IA/Restauración ---
+# --- Dependencias del sistema ---
+opencv-python-headless==4.11.0.86
+
+# --- Bibliotecas de IA / Restauración facial ---
 basicsr==1.4.2
 gfpgan==1.3.8
 realesrgan==0.3.0
@@ -20,10 +21,9 @@ facexlib==0.3.0
 lpips==0.1.4
 
 # --- Modelos y APIs ---
-transformers==4.44.2
-huggingface-hub==0.24.6
+transformers==4.46.0
+huggingface-hub==0.25.2
 diffusers==0.30.0
 
 # --- Google Gemini API ---
 google-generativeai==0.8.3
-
