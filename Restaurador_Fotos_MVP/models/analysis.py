@@ -64,7 +64,7 @@ def analizar_con_gemini(gemini_api_key: str, imagen_bytes: bytes) -> str:
             "data": base64.b64encode(image_bytes_clean).decode('utf-8')
         }
 
-        model = genai.GenerativeModel('models/gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         response = safe_generate(model, [prompt, image_part])
         return response.text if response and response.text else "Análisis no disponible"
 
@@ -79,9 +79,21 @@ def analizar_con_gemini(gemini_api_key: str, imagen_bytes: bytes) -> str:
 def load_clip_model():
     from transformers import CLIPProcessor, CLIPModel
     model_name = "openai/clip-vit-base-patch16"  # ⚡ Modelo más liviano, mismo tipo
-    model = CLIPModel.from_pretrained(model_name)
-    processor = CLIPProcessor.from_pretrained(model_name)
-    return model, processor
+    try:
+        model = CLIPModel.from_pretrained(model_name)
+        processor = CLIPProcessor.from_pretrained(model_name)
+        return model, processor
+    except Exception as e:
+        # Fallback a modelo alternativo si hay problemas
+        st.warning(f"Modelo CLIP principal no disponible: {e}. Intentando modelo alternativo...")
+        try:
+            model_name_alt = "laion/CLIP-ViT-B-32-laion2B-s34B-b79K"
+            model = CLIPModel.from_pretrained(model_name_alt)
+            processor = CLIPProcessor.from_pretrained(model_name_alt)
+            return model, processor
+        except Exception as e2:
+            st.error(f"Error cargando modelo CLIP alternativo: {e2}")
+            return None, None
 
 
 def analizar_calidad_clip(imagen_bytes: bytes) -> dict:
@@ -91,6 +103,11 @@ def analizar_calidad_clip(imagen_bytes: bytes) -> dict:
 
     try:
         model, processor = load_clip_model()
+
+        # Verificar si el modelo se cargó correctamente
+        if model is None or processor is None:
+            return {"error": "No se pudo cargar el modelo CLIP"}
+
         image = Image.open(io.BytesIO(imagen_bytes))
         image.thumbnail((512, 512))  # 🔹 Reduce RAM
 
@@ -153,7 +170,7 @@ def analizar_con_gemini_comparativo(imagen_original_bytes: bytes, imagen_restaur
         Concluye con un breve resumen del resultado global de la restauración.
         """
 
-        model = genai.GenerativeModel("models/gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-1.5-flash")
         response = safe_generate(model, [prompt, img_o, img_r])
         return response.text if response and response.text else "Análisis no disponible"
 
