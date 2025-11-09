@@ -148,9 +148,9 @@ if usar_preset_basico:
     usar_realesrgan = torch_available
     usar_codeformer = torch_available
     usar_gfpgan = False
-    usar_retouching = modules_available or True # True si módulos están o no (usa lógica interna si falla)
-    usar_contraste_adaptativo = torch_available
-    usar_denoise = modules_available or True
+    usar_retouching = False # Desactivado por defecto en modo básico - demasiado agresivo
+    usar_contraste_adaptativo = False # Desactivado por defecto - da sensación de foto vieja
+    usar_denoise = modules_available or True # Solo denoising muy suave
     usar_sharpen = torch_available
     usar_scratch_removal = torch_available
     usar_spot_removal = torch_available
@@ -169,14 +169,13 @@ if usar_preset_basico:
         - 🩹 **Reparación de daños**: Eliminación de arañazos y manchas
 
         **🎨 Fase 3: Mejoras Tonales**
-        - 🎨 **Retoque suave**: Mejora de color natural
-        - 🔇 **Reducción de ruido**: Eliminación moderada de granulado
+        - 🔇 **Reducción de ruido suave**: Preserva detalles originales
 
         **✨ Fase 4: Acabado Final**
         - ⚡ **Afilado**: Realce final de detalles
         - 🎯 **Definición**: Bordes y colorización básica
 
-        *Configurado para resultados naturales y seguros*
+        *Enfoque en reparación estructural, sin alteraciones agresivas*
         """)
 
 elif usar_preset_avanzado:
@@ -192,8 +191,8 @@ elif usar_preset_avanzado:
         usar_realesrgan = torch_available
         usar_codeformer = torch_available
         usar_gfpgan = False
-        usar_retouching = modules_available or True
-        usar_contraste_adaptativo = torch_available
+        usar_retouching = modules_available or True # Mantener en avanzado para usuarios que lo necesiten
+        usar_contraste_adaptativo = torch_available # Mantener en avanzado pero con parámetros suaves
         usar_denoise = modules_available or True
         usar_sharpen = torch_available
         usar_scratch_removal = torch_available
