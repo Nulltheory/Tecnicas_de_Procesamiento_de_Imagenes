@@ -372,14 +372,11 @@ elif usar_preset_avanzado:
         scratch_sensitivity = 3
         color_boost = 0.9
 
-        # Paso 1: Base y upscaling
-        with st.sidebar.expander("1️⃣ Base y Upscaling", expanded=True):
+        # 🧩 Fase 1: Base de calidad
+        with st.sidebar.expander("🧩 Fase 1: Base de Calidad", expanded=True):
             usar_realesrgan = st.checkbox("Real-ESRGAN (x4)", value=torch_available,
                                         disabled=not torch_available,
                                         help="Primer paso: upscaling de alta calidad (requiere PyTorch)" if not torch_available else "Primer paso: upscaling de alta calidad")
-
-        # Paso 2: Restauración facial
-        with st.sidebar.expander("2️⃣ Restauración Facial", expanded=True):
             usar_codeformer = st.checkbox("CodeFormer", value=torch_available,
                                         disabled=not torch_available,
                                         help="Restauración facial sin recortar (requiere PyTorch)" if not torch_available else "Restauración facial sin recortar")
@@ -387,19 +384,8 @@ elif usar_preset_avanzado:
                                     disabled=not torch_available,
                                     help="Restauración facial con recorte (requiere PyTorch)" if not torch_available else "Restauración facial con recorte (alternativa)")
 
-        # Paso 3: Mejoras básicas
-        with st.sidebar.expander("3️⃣ Mejoras Básicas", expanded=False):
-            usar_retouching = st.checkbox("Retoque Color/Contraste", value=True, help="Mejora de color y contraste")
-            usar_contraste_adaptativo = st.checkbox("Contraste Adaptativo", value=torch_available,
-                                                  disabled=not torch_available,
-                                                  help="CLAHE para mejor definición local (requiere PyTorch)" if not torch_available else "CLAHE para mejor definición local")
-            usar_denoise = st.checkbox("Reducción de Ruido", value=True, help="Eliminación de ruido y granulado")
-            usar_sharpen = st.checkbox("Afilar Detalles", value=torch_available,
-                                     disabled=not torch_available,
-                                     help="Realce sutil de detalles finos (requiere PyTorch)" if not torch_available else "Realce sutil de detalles finos")
-
-        # Paso 4: Reparación de daños
-        with st.sidebar.expander("4️⃣ Reparación de Daños", expanded=True):
+        # 🩹 Fase 2: Reparación estructural
+        with st.sidebar.expander("🩹 Fase 2: Reparación Estructural", expanded=True):
             usar_scratch_removal = st.checkbox("Eliminar Arañazos", value=torch_available,
                                              disabled=not torch_available,
                                              help="Reparación agresiva de arañazos (requiere PyTorch)" if not torch_available else "Reparación agresiva de arañazos")
@@ -407,13 +393,24 @@ elif usar_preset_avanzado:
                                           disabled=not torch_available,
                                           help="Eliminación de manchas blancas (requiere PyTorch)" if not torch_available else "Eliminación de manchas blancas")
 
-        # Paso 5: Acabados
-        with st.sidebar.expander("5️⃣ Acabados", expanded=False):
+        # 🎨 Fase 3: Mejoras tonales y cromáticas
+        with st.sidebar.expander("🎨 Fase 3: Mejoras Tonales", expanded=False):
+            usar_retouching = st.checkbox("Retoque Color/Contraste", value=True, help="Mejora de color y contraste")
+            usar_contraste_adaptativo = st.checkbox("Contraste Adaptativo", value=torch_available,
+                                                  disabled=not torch_available,
+                                                  help="CLAHE para mejor definición local (requiere PyTorch)" if not torch_available else "CLAHE para mejor definición local")
+            usar_denoise = st.checkbox("Reducción de Ruido", value=True, help="Eliminación de ruido y granulado")
+
+        # ✨ Fase 4: Acabado final
+        with st.sidebar.expander("✨ Fase 4: Acabado Final", expanded=False):
+            usar_sharpen = st.checkbox("Afilar Detalles", value=torch_available,
+                                     disabled=not torch_available,
+                                     help="Realce sutil de detalles finos (requiere PyTorch)" if not torch_available else "Realce sutil de detalles finos")
             usar_border_enhancement = st.checkbox("Definir Bordes", value=True, help="Mejorar definición de bordes")
             usar_colorization = st.checkbox("Colorizar Imagen", value=True, help="Convertir B/N a color básico")
 
-        # Paso 6: Mejoras creativas
-        with st.sidebar.expander("6️⃣ Creativas (Opcional)", expanded=False):
+        # 🔟 Mejoras creativas (opcional)
+        with st.sidebar.expander("🔟 Creativas (Opcional)", expanded=False):
             usar_sd = st.checkbox("Stable Diffusion", value=False,
                                 disabled=not torch_available,
                                 help="Último paso: mejoras creativas avanzadas (requiere PyTorch)" if not torch_available else "Último paso: mejoras creativas avanzadas")
@@ -678,14 +675,18 @@ if imagen_cargada:
             st.info("Clasificando calidad con CLIP...")
             # Código para llamar a analizar_calidad_clip(imagen_restaurada)
 
-        # Usar la función de utilidad para la descarga
-        try:
-            mostrar_resultado_con_descarga(imagen_restaurada, "imagen_restaurada.png")
-        except NameError:
-             st.download_button(
-                label="⬇️ Descargar Imagen Restaurada",
-                data=io.BytesIO(imagen_restaurada.tobytes()), # Simplificado para funcionar sin la utilidad
-                file_name="foto_restaurada.png",
-                mime="image/png"
-
-            )
+        # Botón de descarga prominente
+        st.markdown("### ⬇️ Descargar Imagen Restaurada")
+        col_btn_left, col_btn_center, col_btn_right = st.columns([1, 2, 1])
+        with col_btn_center:
+            try:
+                mostrar_resultado_con_descarga(imagen_restaurada, "imagen_restaurada.png")
+            except NameError:
+                 st.download_button(
+                    label="⬇️ Descargar Imagen Restaurada",
+                    data=io.BytesIO(imagen_restaurada.tobytes()), # Simplificado para funcionar sin la utilidad
+                    file_name="foto_restaurada.png",
+                    mime="image/png",
+                    use_container_width=True,
+                    type="primary"
+                )
