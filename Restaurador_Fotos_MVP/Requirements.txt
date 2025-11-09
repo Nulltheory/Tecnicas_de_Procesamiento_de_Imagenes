@@ -4,11 +4,10 @@ numpy<2
 Pillow
 tqdm
 
-# --- PyTorch CPU (no CUDA) ---
-torch==2.2.2+cpu
-torchvision==0.17.2+cpu
-torchaudio==2.2.2+cpu
---extra-index-url https://download.pytorch.org/whl/cpu
+# --- PyTorch CPU (versión PyPI compatible con Streamlit Cloud) ---
+torch==2.2.2
+torchvision==0.17.2
+torchaudio==2.2.2
 
 # --- Bibliotecas de IA/Restauración ---
 basicsr==1.4.2
@@ -18,9 +17,9 @@ facexlib==0.3.0
 lpips==0.1.4
 
 # --- Modelos y APIs ---
-transformers
-huggingface-hub
-diffusers
+transformers==4.44.2
+huggingface-hub==0.24.6
+diffusers==0.30.0
 
 # --- Google Gemini API ---
-google-generativeai
+google-generativeai==0.8.3
