@@ -100,13 +100,13 @@ st.sidebar.markdown(f"**Estado:** {' | '.join(api_status)}")
 with st.sidebar.expander("🔑 Configurar APIs", expanded=False):
     st.markdown("**HuggingFace Token** (Opcional)")
     st.markdown("*Para modelos avanzados de CLIP*")
-    hf_token = st.text_input("Token HF", type="password", value=os.getenv("HF_TOKEN", ""),
+    hf_token = st.text_input("Token HF", value=os.getenv("HF_TOKEN", ""),
                             help="Obtén gratis en huggingface.co/settings/tokens", key="hf_token", disabled=True)
 
     st.markdown("---")
     st.markdown("**Gemini API Key**")
     st.markdown("*Para análisis detallado con IA*")
-    gemini_api_key = st.text_input("API Key Gemini", type="password", value=os.getenv("GEMINI_API_KEY", ""),
+    gemini_api_key = st.text_input("API Key Gemini", value=os.getenv("GEMINI_API_KEY", ""),
                                   help="Obtén gratis en makersuite.google.com/app/apikey", key="gemini_key", disabled=True)
 
     st.info("🔒 Campos bloqueados por seguridad. Las claves se configuran vía variables de entorno del sistema.")
@@ -125,6 +125,48 @@ elif modules_available:
 else:
     st.sidebar.error("❌ Sistema limitado - Solo funciones básicas")
     st.sidebar.info("La aplicación funcionará con capacidades mínimas")
+
+st.sidebar.markdown("---")
+
+# --- Consejos y Limitaciones ---
+with st.sidebar.expander("💡 Consejos de Uso", expanded=False):
+    st.markdown("""
+    **Para mejores resultados:**
+    - ✅ **Fotos con daños leves**: Rasguños finos, polvo, decoloración ligera
+    - ✅ **Imágenes nítidas**: Rostros visibles y detalles reconocibles
+    - ✅ **Fotos vintage**: Imágenes antiguas en buen estado general
+    - ✅ **Formatos estándar**: JPG/PNG de buena calidad
+
+    **Limitaciones de la IA:**
+    - ❌ **Daños físicos profundos**: Rasguños anchos, desgarros, manchas grandes
+    - ❌ **Información perdida**: No reconstruye partes completamente faltantes
+    - ❌ **Calidad original pobre**: Resultados dependen de la imagen base
+    - ❌ **Texto dañado**: No puede reconstruir escritura ilegible
+    """)
+
+with st.sidebar.expander("🚀 Guía Rápida", expanded=False):
+    st.markdown("""
+    **🚀 Inicio Rápido (3 pasos):**
+    1. **Sube tu foto** → Arrastra o selecciona imagen antigua
+    2. **Elige modo** → Básico (automático) o Avanzado (manual)
+    3. **Ejecuta** → Haz clic en "🚀 Iniciar Restauración"
+
+    **⚙️ Configuración Recomendada:**
+
+    **Para Principiantes:**
+    - Modo: Básico (Recomendado)
+    - **Enfoque**: Reparación estructural conservadora
+    - Análisis: Activar Gemini para evaluación
+    - Resultado: Restauración natural sin alteraciones agresivas
+
+    **Para Fotos Complejas:**
+    - Modo: Avanzado con preset rápido
+    - **Fase 2 incluida**: Reparación estructural automática
+    - **Ajustes disponibles**: Retoque de color, CLAHE, denoising avanzado
+    - Análisis: Ambos (CLIP + Gemini) para evaluación completa
+
+    **💡 Pro Tip:** Empieza con Modo Básico, si no satisface, prueba Avanzado
+    """)
 
 st.sidebar.markdown("---")
 
@@ -331,57 +373,6 @@ elif usar_preset_avanzado:
 
 
 
-st.sidebar.markdown("---")
-
-# --- Consejos y Limitaciones ---
-with st.sidebar.expander("💡 Consejos de Uso", expanded=False):
-    st.markdown("""
-    **Para mejores resultados:**
-    - ✅ **Fotos con daños leves**: Rasguños finos, polvo, decoloración ligera
-    - ✅ **Imágenes nítidas**: Rostros visibles y detalles reconocibles
-    - ✅ **Fotos vintage**: Imágenes antiguas en buen estado general
-    - ✅ **Formatos estándar**: JPG/PNG de buena calidad
-
-    **Limitaciones de la IA:**
-    - ❌ **Daños físicos profundos**: Rasguños anchos, desgarros, manchas grandes
-    - ❌ **Información perdida**: No reconstruye partes completamente faltantes
-    - ❌ **Calidad original pobre**: Resultados dependen de la imagen base
-    - ❌ **Texto dañado**: No puede reconstruir escritura ilegible
-    """)
-
-with st.sidebar.expander("🚀 Guía Rápida", expanded=False):
-    st.markdown("""
-    **🚀 Inicio Rápido (3 pasos):**
-    1. **Sube tu foto** → Arrastra o selecciona imagen antigua
-    2. **Elige modo** → Básico (automático) o Avanzado (manual)
-    3. **Ejecuta** → Haz clic en "🚀 Iniciar Restauración"
-
-    **⚙️ Configuración Recomendada:**
-
-    **Para Principiantes:**
-    - Modo: Básico (Recomendado)
-    - **Enfoque**: Reparación estructural conservadora
-    - Análisis: Activar Gemini para evaluación
-    - Resultado: Restauración natural sin alteraciones agresivas
-
-    **Para Fotos Complejas:**
-    - Modo: Avanzado con preset rápido
-    - **Fase 2 incluida**: Reparación estructural automática
-    - **Ajustes disponibles**: Retoque de color, CLAHE, denoising avanzado
-    - Análisis: Ambos (CLIP + Gemini) para evaluación completa
-
-    **💡 Pro Tip:** Empieza con Modo Básico, si no satisface, prueba Avanzado
-    """)
-
-st.sidebar.markdown("---")
-
-# --- Análisis de Calidad ---
-st.sidebar.markdown("### 📊 Análisis de Calidad")
-
-usar_gemini = st.sidebar.checkbox("Análisis Gemini", value=True, help="Análisis detallado y positivo con IA")
-usar_clip = st.sidebar.checkbox("Clasificación CLIP", value=torch_available,
-                              disabled=not torch_available,
-                              help="Análisis automático de contenido y calidad (requiere PyTorch)" if not torch_available else "Análisis automático de contenido y calidad")
 
 # --- Upload de imagen ---
 st.markdown("### 📤 Subida de Imagen")
