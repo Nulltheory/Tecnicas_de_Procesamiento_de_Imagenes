@@ -718,7 +718,7 @@ if imagen_cargada:
                 # Llamar a la función de clasificación CLIP
                 resultado_clip = analizar_calidad_clip(img_restaurada_bytes)
 
-                if "error" not in resultado_clip:
+                if resultado_clip and "error" not in resultado_clip:
                     st.success("✅ Clasificación CLIP completada")
                     with st.expander("📊 Resultado de Clasificación CLIP", expanded=True):
                         for key, value in resultado_clip.items():
@@ -727,9 +727,10 @@ if imagen_cargada:
                             else:
                                 st.write(f"**{key}:** {value}")
                 else:
-                    st.error(f"❌ Error en clasificación CLIP: {resultado_clip['error']}")
+                    error_msg = resultado_clip.get('error', 'Error desconocido en CLIP') if resultado_clip else 'CLIP no disponible'
+                    st.warning(f"⚠️ Clasificación CLIP no disponible: {error_msg}")
             except Exception as e:
-                st.error(f"❌ Error en análisis CLIP: {e}")
+                st.warning(f"⚠️ Error en análisis CLIP: {e}")
 
         # Botón de descarga prominente
         st.markdown("### ⬇️ Descargar Imagen Restaurada")
