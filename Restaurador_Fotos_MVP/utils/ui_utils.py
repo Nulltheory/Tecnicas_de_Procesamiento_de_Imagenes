@@ -19,7 +19,7 @@ def mostrar_progreso(operacion: str, progreso: int):
 
 def mostrar_resultado_con_descarga(imagen: Image.Image, nombre_archivo: str, titulo: str = "Imagen Restaurada"):
     """Muestra resultado con opciones de descarga"""
-    st.image(imagen, caption=titulo, use_column_width=True)
+    st.image(imagen, caption=titulo, use_container_width=True)
     
     # Preparar opciones de descarga
     col1, col2 = st.columns(2)
