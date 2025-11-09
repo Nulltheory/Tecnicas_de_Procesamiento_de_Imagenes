@@ -642,3 +642,4 @@ if imagen_cargada:
                 mime="image/png"
 
             )
+
