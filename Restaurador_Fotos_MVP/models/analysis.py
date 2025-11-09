@@ -64,7 +64,15 @@ def analizar_con_gemini(gemini_api_key: str, imagen_bytes: bytes) -> str:
             "data": base64.b64encode(image_bytes_clean).decode('utf-8')
         }
 
-        model = genai.GenerativeModel('gemini-1.0-pro')
+        # Usar modelo básico que debería estar disponible
+        try:
+            model = genai.GenerativeModel('gemini-pro')
+        except:
+            # Fallback a modelo de visión si está disponible
+            try:
+                model = genai.GenerativeModel('gemini-pro-vision')
+            except:
+                raise Exception("No se pudo cargar ningún modelo Gemini disponible")
         response = safe_generate(model, [prompt, image_part])
         return response.text if response and response.text else "Análisis no disponible"
 
@@ -77,24 +85,9 @@ def analizar_con_gemini(gemini_api_key: str, imagen_bytes: bytes) -> str:
 # =========================
 @st.cache_resource
 def load_clip_model():
-    from transformers import CLIPProcessor, CLIPModel
-    # Usar modelo que funciona en Streamlit Cloud
-    model_name = "openai/clip-vit-base-patch32"  # ⚡ Versión más compatible
-    try:
-        model = CLIPModel.from_pretrained(model_name)
-        processor = CLIPProcessor.from_pretrained(model_name)
-        return model, processor
-    except Exception as e:
-        # Fallback a modelo aún más básico si hay problemas
-        st.warning(f"Modelo CLIP principal no disponible: {e}. Intentando modelo alternativo...")
-        try:
-            model_name_alt = "microsoft/DialoGPT-small"  # Modelo básico de Microsoft
-            # Como DialoGPT no es CLIP, devolveremos None para indicar que no se puede usar
-            st.error("Modelos CLIP no disponibles. La clasificación de calidad estará deshabilitada.")
-            return None, None
-        except Exception as e2:
-            st.error(f"Error cargando modelo alternativo: {e2}")
-            return None, None
+    # CLIP no funciona bien en Streamlit Cloud, devolver None para graceful degradation
+    st.info("ℹ️ CLIP requiere configuración adicional en Streamlit Cloud. Usando solo análisis Gemini por ahora.")
+    return None, None
 
 
 def analizar_calidad_clip(imagen_bytes: bytes) -> dict:
@@ -171,7 +164,15 @@ def analizar_con_gemini_comparativo(imagen_original_bytes: bytes, imagen_restaur
         Concluye con un breve resumen del resultado global de la restauración.
         """
 
-        model = genai.GenerativeModel("gemini-1.0-pro")
+        # Usar modelo básico que debería estar disponible
+        try:
+            model = genai.GenerativeModel('gemini-pro')
+        except:
+            # Fallback a modelo de visión si está disponible
+            try:
+                model = genai.GenerativeModel('gemini-pro-vision')
+            except:
+                raise Exception("No se pudo cargar ningún modelo Gemini disponible")
         response = safe_generate(model, [prompt, img_o, img_r])
         return response.text if response and response.text else "Análisis no disponible"
 
