@@ -1,11 +1,10 @@
 """
 🤖 Módulo de Análisis con IA (Optimizado para Streamlit Cloud)
 
-Incluye:
+Este módulo mantiene toda la lógica original, pero incluye mejoras de estabilidad:
 - Cacheo del modelo CLIP con @st.cache_resource
 - Timeout controlado para llamadas a Gemini
 - Reducción de tamaño de imagen para evitar OOM
-- Compatibilidad actualizada con modelos Gemini 2.x
 """
 
 import io
@@ -30,23 +29,6 @@ def safe_generate(model, content, timeout=25):
 
 
 # =========================
-# 🔹 Inicialización de Gemini
-# =========================
-def init_gemini(api_key: str):
-    import google.generativeai as genai
-    genai.configure(api_key=api_key)
-    try:
-        # Modelo estable actual (noviembre 2025)
-        return genai.GenerativeModel("gemini-2.0-flash")
-    except Exception:
-        try:
-            # Fallback a otro disponible
-            return genai.GenerativeModel("gemini-1.5-flash")
-        except Exception:
-            raise Exception("❌ No se pudo inicializar ningún modelo Gemini compatible.")
-
-
-# =========================
 # 🔹 BLIP - Hugging Face
 # =========================
 def analizar_con_blip_hf(hf_token: str, imagen_bytes: bytes) -> str:
@@ -60,10 +42,8 @@ def analizar_con_blip_hf(hf_token: str, imagen_bytes: bytes) -> str:
 # 🔹 Gemini (imagen única)
 # =========================
 def analizar_con_gemini(gemini_api_key: str, imagen_bytes: bytes) -> str:
-    try:
-        model = init_gemini(gemini_api_key)
-    except Exception as e:
-        return f"Error inicializando Gemini: {e}"
+    import google.generativeai as genai
+    genai.configure(api_key=gemini_api_key)
 
     prompt = (
         "Eres un asistente experto en restauración de fotografías antiguas. "
@@ -84,6 +64,14 @@ def analizar_con_gemini(gemini_api_key: str, imagen_bytes: bytes) -> str:
             "data": base64.b64encode(image_bytes_clean).decode('utf-8')
         }
 
+        # Usar modelos válidos actualmente: gemini-2.0-flash o gemini-1.5-flash
+        try:
+            model = genai.GenerativeModel('gemini-2.0-flash')
+        except:
+            try:
+                model = genai.GenerativeModel('gemini-1.5-flash')
+            except:
+                raise Exception("No se pudo cargar ningún modelo Gemini disponible")
         response = safe_generate(model, [prompt, image_part])
         return response.text if response and response.text else "Análisis no disponible"
 
@@ -96,17 +84,20 @@ def analizar_con_gemini(gemini_api_key: str, imagen_bytes: bytes) -> str:
 # =========================
 @st.cache_resource
 def load_clip_model():
+    # CLIP no funciona bien en Streamlit Cloud, devolver None para graceful degradation
     st.info("ℹ️ CLIP requiere configuración adicional en Streamlit Cloud. Usando solo análisis Gemini por ahora.")
     return None, None
 
 
 def analizar_calidad_clip(imagen_bytes: bytes) -> dict:
+    """Clasifica calidad de imagen usando CLIP"""
     import torch
     from transformers import CLIPProcessor, CLIPModel
 
     try:
         model, processor = load_clip_model()
 
+        # Verificar si el modelo se cargó correctamente
         if model is None or processor is None:
             return {"error": "No se pudo cargar el modelo CLIP"}
 
@@ -149,10 +140,8 @@ def analizar_calidad_clip(imagen_bytes: bytes) -> dict:
 # 🔹 Gemini - Comparativo
 # =========================
 def analizar_con_gemini_comparativo(imagen_original_bytes: bytes, imagen_restaurada_bytes: bytes, gemini_api_key: str) -> str:
-    try:
-        model = init_gemini(gemini_api_key)
-    except Exception as e:
-        return f"Error inicializando Gemini: {e}"
+    import google.generativeai as genai
+    genai.configure(api_key=gemini_api_key)
 
     try:
         pil_original = Image.open(io.BytesIO(imagen_original_bytes))
@@ -174,6 +163,14 @@ def analizar_con_gemini_comparativo(imagen_original_bytes: bytes, imagen_restaur
         Concluye con un breve resumen del resultado global de la restauración.
         """
 
+        # Usar modelos válidos actualmente: gemini-2.0-flash o gemini-1.5-flash
+        try:
+            model = genai.GenerativeModel('gemini-2.0-flash')
+        except:
+            try:
+                model = genai.GenerativeModel('gemini-1.5-flash')
+            except:
+                raise Exception("No se pudo cargar ningún modelo Gemini disponible")
         response = safe_generate(model, [prompt, img_o, img_r])
         return response.text if response and response.text else "Análisis no disponible"
 
