@@ -1,0 +1,23 @@
+# requirements.txt
+streamlit
+Pillow
+numpy
+
+# Core AI/PyTorch (Asume CPU si no especificas versión con CUDA)
+torch
+torchvision
+torchaudio
+
+# Bibliotecas de IA/Restauración
+basicsr
+gfpgan
+realesrgan
+facexlib
+lpips
+tqdm
+transformers
+huggingface-hub
+diffusers
+
+# Google Gemini API
+google-generativeai
