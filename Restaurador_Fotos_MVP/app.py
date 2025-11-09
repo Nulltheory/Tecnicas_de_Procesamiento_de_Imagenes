@@ -113,6 +113,21 @@ with st.sidebar.expander("🔑 Configurar APIs", expanded=False):
 
 st.sidebar.markdown("---")
 
+# Mostrar estado de capacidades
+st.sidebar.markdown("### 🔧 Estado del Sistema")
+if torch_available and modules_available:
+    st.sidebar.success("✅ Sistema completo - Todas las funciones disponibles")
+elif torch_available:
+    st.sidebar.warning("⚠️ PyTorch disponible - Funciones limitadas")
+    st.sidebar.info("Algunos módulos especializados no están disponibles")
+elif modules_available:
+    st.sidebar.info("ℹ️ Funciones básicas disponibles - Sin PyTorch")
+else:
+    st.sidebar.error("❌ Sistema limitado - Solo funciones básicas")
+    st.sidebar.info("La aplicación funcionará con capacidades mínimas")
+
+st.sidebar.markdown("---")
+
 # --- Algoritmos de Restauración (Pipeline 4 Fases Optimizado) ---
 st.sidebar.markdown("### 🎨 Pipeline de Restauración")
 st.sidebar.caption("4 fases optimizadas: Base → Estructural → Tonal → Final")
@@ -314,19 +329,9 @@ elif usar_preset_avanzado:
                                 disabled=not torch_available,
                                 help="Último paso: mejoras creativas avanzadas (requiere PyTorch)" if not torch_available else "Último paso: mejoras creativas avanzadas")
 
-# Mostrar estado de capacidades
+
+
 st.sidebar.markdown("---")
-st.sidebar.markdown("### 🔧 Estado del Sistema")
-if torch_available and modules_available:
-    st.sidebar.success("✅ Sistema completo - Todas las funciones disponibles")
-elif torch_available:
-    st.sidebar.warning("⚠️ PyTorch disponible - Funciones limitadas")
-    st.sidebar.info("Algunos módulos especializados no están disponibles")
-elif modules_available:
-    st.sidebar.info("ℹ️ Funciones básicas disponibles - Sin PyTorch")
-else:
-    st.sidebar.error("❌ Sistema limitado - Solo funciones básicas")
-    st.sidebar.info("La aplicación funcionará con capacidades mínimas")
 
 # --- Consejos y Limitaciones ---
 with st.sidebar.expander("💡 Consejos de Uso", expanded=False):
@@ -367,7 +372,6 @@ with st.sidebar.expander("🚀 Guía Rápida", expanded=False):
 
     **💡 Pro Tip:** Empieza con Modo Básico, si no satisface, prueba Avanzado
     """)
-
 
 st.sidebar.markdown("---")
 
