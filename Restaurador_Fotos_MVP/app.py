@@ -337,18 +337,18 @@ with st.sidebar.expander("⚙️ Configuración Avanzada", expanded=False):
 
     # Noise reduction settings
     st.markdown("**Reducción de Ruido**")
-    denoise_strength = st.slider("Intensidad", 1, 5, 2,
-                                help="2 = reducción suave que preserva detalles")
+    denoise_strength = st.slider("Intensidad", 1, 5, 1,
+                                help="1 = reducción muy suave, preserva detalles finos")
 
     # Scratch removal settings
     st.markdown("**Eliminación de Arañazos**")
-    scratch_sensitivity = st.slider("Sensibilidad", 1, 10, 3,
-                                   help="3 = menos agresivo, evita sobre-corrección")
+    scratch_sensitivity = st.slider("Sensibilidad", 1, 10, 2,
+                                   help="2 = muy conservador, preserva detalles estructurales")
 
     # Color enhancement settings
     st.markdown("**Retoque de Color**")
-    color_boost = st.slider("Intensidad de color", 0.5, 2.0, 0.9,
-                           help="0.9 = mejora sutil y natural")
+    color_boost = st.slider("Intensidad de color", 0.5, 2.0, 0.7,
+                           help="0.7 = mejora muy sutil, preserva colores originales")
 
 # --- Consejos y Limitaciones ---
 with st.sidebar.expander("💡 Consejos de Uso", expanded=False):
