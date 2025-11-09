@@ -4,10 +4,11 @@ Pillow
 numpy
 
 # Core AI/PyTorch (solo CPU)
-torch==2.2.2+cpu
-torchvision==0.17.2+cpu
-torchaudio==2.2.2+cpu
+torch==2.0.1+cpu
+torchvision==0.15.2+cpu
+torchaudio==2.0.2+cpu
 --extra-index-url https://download.pytorch.org/whl/cpu
+
 
 # Bibliotecas de IA/Restauración
 basicsr
@@ -22,3 +23,4 @@ diffusers
 
 # Google Gemini API
 google-generativeai
+
