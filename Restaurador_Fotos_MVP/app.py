@@ -85,12 +85,15 @@ st.sidebar.header("🔐 Configuración API")
 
 # Mostrar estado de configuración
 api_status = []
-if os.getenv("HF_TOKEN"):
+hf_token = os.getenv("HF_TOKEN") or st.secrets.get("HF_TOKEN", "")
+gemini_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY", "")
+
+if hf_token:
     api_status.append("✅ HF Token")
 else:
     api_status.append("❌ HF Token")
 
-if os.getenv("GEMINI_API_KEY"):
+if gemini_key:
     api_status.append("✅ Gemini API")
 else:
     api_status.append("❌ Gemini API")
@@ -693,7 +696,7 @@ if imagen_cargada:
                 img_restaurada_bytes = img_restaurada_bytes.getvalue()
 
                 # Llamar a la función de análisis comparativo
-                gemini_api_key = os.getenv("GEMINI_API_KEY", "")
+                gemini_api_key = os.getenv("GEMINI_API_KEY") or st.secrets.get("GEMINI_API_KEY", "")
                 if gemini_api_key:
                     analisis_gemini = analizar_con_gemini_comparativo(img_original_bytes, img_restaurada_bytes, gemini_api_key)
                     st.success("✅ Análisis Gemini completado")
