@@ -727,10 +727,9 @@ if imagen_cargada:
                             else:
                                 st.write(f"**{key}:** {value}")
                 else:
-                    error_msg = resultado_clip.get('error', 'Error desconocido en CLIP') if resultado_clip else 'CLIP no disponible'
-                    st.warning(f"⚠️ Clasificación CLIP no disponible: {error_msg}")
+                    st.info("ℹ️ CLIP no disponible en este entorno - usando solo análisis Gemini")
             except Exception as e:
-                st.warning(f"⚠️ Error en análisis CLIP: {e}")
+                st.info("ℹ️ CLIP no disponible en este entorno - usando solo análisis Gemini")
 
         # Botón de descarga prominente
         st.markdown("### ⬇️ Descargar Imagen Restaurada")
