@@ -329,8 +329,9 @@ def mejorar_color_contraste(img: Image.Image, intensity: float = 1.0) -> Image.I
             beta = int((intensity - 1.0) * 10)      # -10 to +10
             adjusted = cv2.convertScaleAbs(img_array, alpha=alpha, beta=beta)
             return Image.fromarray(adjusted)
-        except:
+        except Exception as e2:
             # Fallback final: devolver imagen original
+            print(f"Error en fallback de color/contraste: {e2}")
             return img
 
 def reducir_ruido_avanzado(img: Image.Image, strength: int = 3) -> Image.Image:
@@ -367,8 +368,9 @@ def reducir_ruido_avanzado(img: Image.Image, strength: int = 3) -> Image.Image:
             # Reducción simple de ruido sin operaciones que requieran GUI
             denoised = cv2.bilateralFilter(img_array, 5, 50, 50)
             return Image.fromarray(denoised)
-        except:
+        except Exception as e2:
             # Fallback final: devolver imagen original
+            print(f"Error en fallback de reducción de ruido: {e2}")
             return img
 
 def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Image.Image:
@@ -450,8 +452,9 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
             result = cv2.bilateralFilter(result, 11, 120, 120)
             result = cv2.bilateralFilter(result, 7, 100, 100)
             return Image.fromarray(result)
-        except:
+        except Exception as e2:
             # Fallback final: devolver imagen original
+            print(f"Error en fallback de inpainting: {e2}")
             return img
 
 def definir_bordes_foto(img: Image.Image) -> Image.Image:
