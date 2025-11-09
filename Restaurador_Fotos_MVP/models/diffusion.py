@@ -320,14 +320,18 @@ def mejorar_color_contraste(img: Image.Image, intensity: float = 1.0) -> Image.I
         return Image.fromarray(result)
 
     except Exception as e:
-        # Fallback simple
-        import cv2
-        img_array = np.array(img)
-        # Ajuste básico de contraste y brillo
-        alpha = 1.0 + (intensity - 1.0) * 0.2  # 0.8-1.2
-        beta = int((intensity - 1.0) * 10)      # -10 to +10
-        adjusted = cv2.convertScaleAbs(img_array, alpha=alpha, beta=beta)
-        return Image.fromarray(adjusted)
+        # Fallback simple sin OpenCV GUI
+        try:
+            import cv2
+            img_array = np.array(img)
+            # Ajuste básico de contraste y brillo sin operaciones que requieran GUI
+            alpha = 1.0 + (intensity - 1.0) * 0.2  # 0.8-1.2
+            beta = int((intensity - 1.0) * 10)      # -10 to +10
+            adjusted = cv2.convertScaleAbs(img_array, alpha=alpha, beta=beta)
+            return Image.fromarray(adjusted)
+        except:
+            # Fallback final: devolver imagen original
+            return img
 
 def reducir_ruido_avanzado(img: Image.Image, strength: int = 3) -> Image.Image:
     """Reducción avanzada de ruido usando múltiples técnicas con intensidad configurable"""
@@ -356,12 +360,16 @@ def reducir_ruido_avanzado(img: Image.Image, strength: int = 3) -> Image.Image:
         return Image.fromarray(denoised)
 
     except Exception as e:
-        # Fallback simple
-        import cv2
-        img_array = np.array(img)
-        # Reducción simple de ruido
-        denoised = cv2.bilateralFilter(img_array, 5, 50, 50)
-        return Image.fromarray(denoised)
+        # Fallback simple sin OpenCV GUI
+        try:
+            import cv2
+            img_array = np.array(img)
+            # Reducción simple de ruido sin operaciones que requieran GUI
+            denoised = cv2.bilateralFilter(img_array, 5, 50, 50)
+            return Image.fromarray(denoised)
+        except:
+            # Fallback final: devolver imagen original
+            return img
 
 def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Image.Image:
     """Eliminación agresiva de arañazos, roturas y daños físicos usando inpainting múltiple"""
@@ -433,14 +441,18 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
             return reducir_ruido_avanzado(img)
 
     except Exception as e:
-        # Fallback agresivo
-        import cv2
-        img_array = np.array(img)
-        # Múltiples pasadas de denoising muy agresivo
-        result = cv2.bilateralFilter(img_array, 15, 150, 150)
-        result = cv2.bilateralFilter(result, 11, 120, 120)
-        result = cv2.bilateralFilter(result, 7, 100, 100)
-        return Image.fromarray(result)
+        # Fallback agresivo sin OpenCV GUI
+        try:
+            import cv2
+            img_array = np.array(img)
+            # Múltiples pasadas de denoising muy agresivo sin operaciones que requieran GUI
+            result = cv2.bilateralFilter(img_array, 15, 150, 150)
+            result = cv2.bilateralFilter(result, 11, 120, 120)
+            result = cv2.bilateralFilter(result, 7, 100, 100)
+            return Image.fromarray(result)
+        except:
+            # Fallback final: devolver imagen original
+            return img
 
 def definir_bordes_foto(img: Image.Image) -> Image.Image:
     """Definir y mejorar los bordes de la fotografía para un aspecto más profesional"""
