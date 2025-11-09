@@ -1,3 +1,6 @@
+# --- Dependencias del sistema ---
+opencv-python-headless==4.11.0.86
+
 # --- Streamlit y utilidades ---
 streamlit==1.40.1
 numpy<2
@@ -23,3 +26,4 @@ diffusers==0.30.0
 
 # --- Google Gemini API ---
 google-generativeai==0.8.3
+
