@@ -747,3 +747,14 @@ if imagen_cargada:
                     use_container_width=True,
                     type="primary"
                 )
+
+        # Segundo botón de descarga (PNG)
+        col_png_left, col_png_center, col_png_right = st.columns([1, 2, 1])
+        with col_png_center:
+            st.download_button(
+                label="📸 Descargar como PNG",
+                data=io.BytesIO(imagen_restaurada.tobytes()),
+                file_name="imagen_restaurada.png",
+                mime="image/png",
+                use_container_width=True
+            )
