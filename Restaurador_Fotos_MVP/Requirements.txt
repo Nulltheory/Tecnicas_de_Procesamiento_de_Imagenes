@@ -1,11 +1,11 @@
-# Requisitos mínimos para Streamlit Cloud - PyTorch preinstalado
+# Requisitos para Streamlit Cloud - sin PyTorch (viene preinstalado)
+--upgrade
 numpy
 pillow
 opencv-python-headless
 scipy
 matplotlib
 requests
-streamlit
 basicsr
 gfpgan
 realesrgan

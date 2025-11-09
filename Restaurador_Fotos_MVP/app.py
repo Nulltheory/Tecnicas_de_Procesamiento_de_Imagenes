@@ -35,12 +35,12 @@ try:
 except (ImportError, Exception) as e:
     torch_available = False
     st.error("❌ PyTorch no disponible")
-    st.error("Streamlit Cloud debería tener PyTorch preinstalado.")
-    st.error("Posibles soluciones:")
-    st.error("• Verificar que la app esté en la rama correcta")
-    st.error("• Revisar logs de despliegue en Streamlit Cloud")
-    st.error("• Contactar soporte de Streamlit Cloud")
-    st.info("💡 Intenta hacer un commit vacío para forzar redeploy")
+    st.error("Esto indica un problema con el entorno de Streamlit Cloud.")
+    st.error("Solución inmediata:")
+    st.error("1. Ve a https://streamlit.io/cloud")
+    st.error("2. Selecciona tu app")
+    st.error("3. Ve a 'Settings' > 'Advanced' > 'Reboot app'")
+    st.error("4. Si no funciona, contacta soporte@streamlit.io")
     st.stop()
 
 # Importaciones de módulos locales - REQUIEREN PyTorch
