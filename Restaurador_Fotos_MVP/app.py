@@ -37,13 +37,11 @@ except (ImportError, Exception) as e:
     st.error("❌ PyTorch no disponible")
     st.error("Streamlit Cloud debería tener PyTorch preinstalado.")
     st.error("Posibles soluciones:")
-    st.error("• Esperar a que termine la instalación")
-    st.error("• Verificar logs de despliegue")
+    st.error("• Verificar que la app esté en la rama correcta")
+    st.error("• Revisar logs de despliegue en Streamlit Cloud")
     st.error("• Contactar soporte de Streamlit Cloud")
-    st.info("🔄 Reintentando en 10 segundos...")
-    import time
-    time.sleep(10)
-    st.rerun()
+    st.info("💡 Intenta hacer un commit vacío para forzar redeploy")
+    st.stop()
 
 # Importaciones de módulos locales - REQUIEREN PyTorch
 try:
