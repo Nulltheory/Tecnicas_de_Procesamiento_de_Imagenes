@@ -124,9 +124,9 @@ with st.sidebar.expander("🔑 Configurar APIs", expanded=False):
 
 st.sidebar.markdown("---")
 
-# --- Algoritmos de Restauración (Pipeline Optimizado) ---
+# --- Algoritmos de Restauración (Pipeline 4 Fases Optimizado) ---
 st.sidebar.markdown("### 🎨 Pipeline de Restauración")
-st.sidebar.caption("Secuencia automática optimizada para mejores resultados")
+st.sidebar.caption("4 fases optimizadas: Base → Estructural → Tonal → Final")
 
 # Configuración principal
 st.sidebar.markdown("**🔧 Configuración Principal**")
@@ -136,7 +136,7 @@ modo_seleccionado = st.sidebar.radio(
     "Selecciona el modo de funcionamiento:",
     ["Modo Básico (Recomendado)", "Modo Avanzado"],
     index=0,  # Básico por defecto
-    help="Modo Básico: Configuración optimizada automática | Modo Avanzado: Control manual completo"
+    help="Modo Básico: 4 fases automáticas con reparación estructural | Modo Avanzado: Control manual completo por fases"
 )
 
 usar_preset_basico = (modo_seleccionado == "Modo Básico (Recomendado)")
@@ -161,11 +161,20 @@ if usar_preset_basico:
     st.sidebar.success("✅ **Modo Básico Activado**")
     with st.sidebar.expander("📋 Qué incluye", expanded=False):
         st.markdown("""
-        **Pipeline equilibrado y seguro:**
+        **🧩 Fase 1: Base de Calidad**
         - 🖼️ **Real-ESRGAN**: Upscaling x4 de calidad
         - 🎭 **CodeFormer**: Restauración facial inteligente
+
+        **🩹 Fase 2: Reparación Estructural**
+        - 🩹 **Reparación de daños**: Eliminación de arañazos y manchas
+
+        **🎨 Fase 3: Mejoras Tonales**
         - 🎨 **Retoque suave**: Mejora de color natural
         - 🔇 **Reducción de ruido**: Eliminación moderada de granulado
+
+        **✨ Fase 4: Acabado Final**
+        - ⚡ **Afilado**: Realce final de detalles
+        - 🎯 **Definición**: Bordes y colorización básica
 
         *Configurado para resultados naturales y seguros*
         """)
@@ -196,13 +205,21 @@ elif usar_preset_avanzado:
         st.sidebar.success("✅ **Configuración Avanzada Equilibrada Activada**")
         with st.sidebar.expander("📋 Pipeline Avanzado Completo", expanded=False):
             st.markdown("""
-            **Configuración avanzada equilibrada:**
+            **🧩 Fase 1: Base de Calidad**
             - 🖼️ **Real-ESRGAN**: Upscaling x4 de máxima calidad
             - 🎭 **CodeFormer**: Restauración facial avanzada
+
+            **🩹 Fase 2: Reparación Estructural**
+            - 🩹 **Reparación completa**: Eliminación de arañazos y manchas blancas
+
+            **🎨 Fase 3: Mejoras Tonales Avanzadas**
             - 🎨 **Retoque**: Color y contraste optimizados
             - 🔍 **CLAHE**: Contraste adaptativo para definición local
             - 🔇 **Reducción de ruido**: Nivel avanzado
+
+            **✨ Fase 4: Acabado Final**
             - ⚡ **Afilado**: Realce final de detalles
+            - 🎯 **Definición**: Bordes y colorización básica
 
             *Más algoritmos que el modo básico, pero con parámetros seguros*
             """)
@@ -365,7 +382,7 @@ with st.sidebar.expander("🚀 Guía Rápida", expanded=False):
 
     **Para Fotos Complejas:**
     - Modo: Avanzado con preset rápido
-    - Activar: Reparación de arañazos si es necesario
+    - **Fase 2 incluida**: Reparación estructural automática (arañazos y manchas)
     - Análisis: Ambos (CLIP + Gemini) para evaluación completa
 
     **💡 Pro Tip:** Empieza con Modo Básico, si no satisface, prueba Avanzado
@@ -430,13 +447,16 @@ if imagen_cargada:
                                     help="Comenzará el proceso de restauración con los algoritmos seleccionados")
 
     if iniciar_proceso:
-        # === PIPELINE OPTIMIZADO - ORDEN CRÍTICO PARA MEJORES RESULTADOS ===
+        # === PIPELINE REESTRUCTURADO - 4 FASES OPTIMIZADAS ===
 
         # Aplicar procesamiento básico disponible
         imagen_restaurada = img_pil.copy()
         procesamiento_aplicado = False
 
-        # 1️⃣ PRIMERO: Base y resolución (Real-ESRGAN) - Fundamento de calidad
+        # 🧩 FASE 1 – Base de calidad
+        st.markdown("#### 🧩 Fase 1: Base de Calidad")
+
+        # 1️⃣ Redimensionado / Upscaling (Real-ESRGAN)
         if usar_realesrgan and torch_available and modules_available:
             with st.spinner(f"Aplicando upscaling con Real-ESRGAN ({realesrgan_model}) x4..."):
                 try:
@@ -447,7 +467,7 @@ if imagen_cargada:
                 except Exception as e:
                     st.warning(f"Error en upscaling: {e}. Continuando sin upscaling.")
 
-        # 2️⃣ SEGUNDO: Restauración facial (CodeFormer/GFPGAN) - Rostros primero
+        # 2️⃣ Restauración facial (CodeFormer / GFPGAN)
         if usar_codeformer and torch_available and modules_available:
             with st.spinner(f"Restaurando con CodeFormer (fidelidad={codeformer_fidelity}, upscale={codeformer_upscale})..."):
                 try:
@@ -472,47 +492,10 @@ if imagen_cargada:
                 except Exception as e:
                     st.error(f"Error durante la restauración con GFPGAN: {e}")
 
-        # 3️⃣ TERCERO: Mejoras de contraste y definición (CLAHE primero)
-        if usar_contraste_adaptativo and torch_available and modules_available:
-            with st.spinner("Aplicando contraste adaptativo CLAHE..."):
-                try:
-                    imagen_restaurada = mejorar_contraste_adaptativo(imagen_restaurada)
-                    st.success("✅ Contraste adaptativo aplicado exitosamente")
-                    procesamiento_aplicado = True
-                except Exception as e:
-                    st.warning(f"Error en contraste adaptativo: {e}. Continuando sin CLAHE.")
+        # 🩹 FASE 2 – Reparación estructural
+        st.markdown("#### 🩹 Fase 2: Reparación Estructural")
 
-        # 4️⃣ CUARTO: Retoque de color (después de CLAHE)
-        if usar_retouching and modules_available:
-            with st.spinner(f"Aplicando retoque de color (intensidad: {color_boost:.1f})..."):
-                try:
-                    imagen_restaurada = mejorar_color_contraste(imagen_restaurada, intensity=color_boost)
-                    st.success("✅ Retoque de color aplicado exitosamente")
-                    procesamiento_aplicado = True
-                except Exception as e:
-                    st.warning(f"Error en retoque: {e}. Continuando sin retoque.")
-
-        # 5️⃣ QUINTO: Reducción de ruido (antes del afilado)
-        if usar_denoise and modules_available:
-            with st.spinner(f"Aplicando reducción de ruido (intensidad: {denoise_strength})..."):
-                try:
-                    imagen_restaurada = reducir_ruido_avanzado(imagen_restaurada, strength=denoise_strength)
-                    st.success("✅ Reducción de ruido aplicada exitosamente")
-                    procesamiento_aplicado = True
-                except Exception as e:
-                    st.warning(f"Error en reducción de ruido: {e}. Continuando sin denoising.")
-
-        # 6️⃣ SEXTO: Afilado de detalles (último paso de mejora básica)
-        if usar_sharpen and torch_available and modules_available:
-            with st.spinner("Aplicando afilado de detalles..."):
-                try:
-                    imagen_restaurada = afinar_detalles(imagen_restaurada)
-                    st.success("✅ Afilado de detalles aplicado exitosamente")
-                    procesamiento_aplicado = True
-                except Exception as e:
-                    st.warning(f"Error en afilado: {e}. Continuando sin sharpen.")
-
-        # 7️⃣ SÉPTIMO: Reparación de daños físicos (después de mejoras básicas)
+        # 3️⃣ Eliminación de arañazos (Inpainting)
         if usar_scratch_removal and torch_available and modules_available:
             with st.spinner(f"Aplicando eliminación de arañazos (sensibilidad: {scratch_sensitivity})..."):
                 try:
@@ -522,6 +505,7 @@ if imagen_cargada:
                 except Exception as e:
                     st.warning(f"Error en eliminación de arañazos: {e}. Continuando sin inpainting.")
 
+        # 4️⃣ Reparación de manchas blancas / pérdidas locales
         if usar_spot_removal and torch_available and modules_available:
             with st.spinner("Aplicando reparación de manchas blancas..."):
                 try:
@@ -531,7 +515,53 @@ if imagen_cargada:
                 except Exception as e:
                     st.warning(f"Error en reparación de manchas: {e}. Continuando sin spot removal.")
 
-        # 8️⃣ OCTAVO: Acabados estéticos (bordes, colorización)
+        # 🎨 FASE 3 – Mejoras tonales y cromáticas
+        st.markdown("#### 🎨 Fase 3: Mejoras Tonales y Cromáticas")
+
+        # 5️⃣ Retoque de color y contraste global
+        if usar_retouching and modules_available:
+            with st.spinner(f"Aplicando retoque de color (intensidad: {color_boost:.1f})..."):
+                try:
+                    imagen_restaurada = mejorar_color_contraste(imagen_restaurada, intensity=color_boost)
+                    st.success("✅ Retoque de color aplicado exitosamente")
+                    procesamiento_aplicado = True
+                except Exception as e:
+                    st.warning(f"Error en retoque: {e}. Continuando sin retoque.")
+
+        # 6️⃣ Contraste adaptativo (CLAHE)
+        if usar_contraste_adaptativo and torch_available and modules_available:
+            with st.spinner("Aplicando contraste adaptativo CLAHE..."):
+                try:
+                    imagen_restaurada = mejorar_contraste_adaptativo(imagen_restaurada)
+                    st.success("✅ Contraste adaptativo aplicado exitosamente")
+                    procesamiento_aplicado = True
+                except Exception as e:
+                    st.warning(f"Error en contraste adaptativo: {e}. Continuando sin CLAHE.")
+
+        # 7️⃣ Reducción de ruido (denoise)
+        if usar_denoise and modules_available:
+            with st.spinner(f"Aplicando reducción de ruido (intensidad: {denoise_strength})..."):
+                try:
+                    imagen_restaurada = reducir_ruido_avanzado(imagen_restaurada, strength=denoise_strength)
+                    st.success("✅ Reducción de ruido aplicada exitosamente")
+                    procesamiento_aplicado = True
+                except Exception as e:
+                    st.warning(f"Error en reducción de ruido: {e}. Continuando sin denoising.")
+
+        # ✨ FASE 4 – Acabado final
+        st.markdown("#### ✨ Fase 4: Acabado Final")
+
+        # 8️⃣ Afilado de detalles (sharpen)
+        if usar_sharpen and torch_available and modules_available:
+            with st.spinner("Aplicando afilado de detalles..."):
+                try:
+                    imagen_restaurada = afinar_detalles(imagen_restaurada)
+                    st.success("✅ Afilado de detalles aplicado exitosamente")
+                    procesamiento_aplicado = True
+                except Exception as e:
+                    st.warning(f"Error en afilado: {e}. Continuando sin sharpen.")
+
+        # 9️⃣ Definir bordes / Colorizar
         if usar_border_enhancement and modules_available:
             with st.spinner("Aplicando definición de bordes..."):
                 try:
@@ -550,7 +580,7 @@ if imagen_cargada:
                 except Exception as e:
                     st.warning(f"Error en colorización: {e}. Continuando sin colorization.")
 
-        # 9️⃣ ÚLTIMO: Mejoras creativas con IA (Stable Diffusion)
+        # 🔟 Stable Diffusion (opcional)
         if usar_sd and torch_available and modules_available:
             with st.spinner(f"Aplicando Stable Diffusion (fuerza: {sd_strength}, pasos: {sd_steps})..."):
                 try:
@@ -626,4 +656,3 @@ if imagen_cargada:
                 mime="image/png"
 
             )
-
