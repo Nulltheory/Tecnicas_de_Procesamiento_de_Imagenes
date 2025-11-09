@@ -1,0 +1,28 @@
+# Requisitos optimizados para Streamlit Cloud
+# PyTorch viene preinstalado en Streamlit Cloud
+
+# Dependencias principales
+streamlit>=1.28.0
+numpy>=1.24.0
+pillow>=10.0.0
+opencv-python-headless>=4.8.0
+scipy>=1.11.0
+matplotlib>=3.7.0
+requests>=2.31.0
+
+# Modelos de IA opcionales (se cargan dinámicamente)
+# Descomenta si necesitas funciones avanzadas:
+# basicsr
+# gfpgan
+# realesrgan
+# facexlib
+# transformers
+# diffusers
+# huggingface-hub
+# google-generativeai
+# lpips
+# tqdm
+
+# Modelos de ejemplo y assets
+# Los modelos pesados se cargan on-demand desde Hugging Face
+# para reducir el tamaño de deployment
