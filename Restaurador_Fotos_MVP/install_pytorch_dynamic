@@ -1,0 +1,60 @@
+"""
+🚀 Dynamic PyTorch Installer for Streamlit Cloud
+Instala PyTorch dinámicamente si no está disponible
+"""
+
+import subprocess
+import sys
+import warnings
+
+def install_pytorch_dynamically():
+    """Instala PyTorch y dependencias al inicio si no están disponibles"""
+    print("🔍 Verificando PyTorch...")
+    
+    try:
+        import torch
+        print(f"✅ PyTorch {torch.__version__} ya disponible")
+        return True
+    except ImportError:
+        print("❌ PyTorch no encontrado - instalando dinámicamente...")
+    
+    # Lista de paquetes críticos
+    packages = [
+        "torch",
+        "torchaudio", 
+        "torchvision",
+        "transformers",
+        "huggingface-hub",
+        "diffusers",
+        "basicsr",
+        "gfpgan",
+        "realesrgan", 
+        "facexlib",
+        "google-generativeai",
+        "lpips",
+        "tqdm"
+    ]
+    
+    print("📦 Instalando PyTorch y dependencias de IA...")
+    
+    for package in packages:
+        try:
+            print(f"Instalando {package}...")
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package, "--quiet"])
+            print(f"✅ {package} instalado")
+        except subprocess.CalledProcessError:
+            print(f"❌ Error instalando {package}")
+            warnings.warn(f"Error instalando {package}")
+    
+    # Verificar instalación
+    try:
+        import torch
+        print(f"✅ PyTorch {torch.__version__} instalado exitosamente!")
+        return True
+    except ImportError:
+        print("❌ Fallo en instalación de PyTorch")
+        return False
+
+# Auto-ejecutar al importar
+if __name__ != "__main__":
+    install_pytorch_dynamically()

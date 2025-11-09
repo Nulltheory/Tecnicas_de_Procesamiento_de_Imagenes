@@ -11,6 +11,51 @@ from PIL import Image
 import io
 import os
 import numpy as np
+import subprocess
+import sys
+import warnings
+
+# 🚀 INSTALACIÓN DINÁMICA DE PYTORCH
+def install_pytorch_if_missing():
+    """Instala PyTorch dinámicamente si no está disponible"""
+    try:
+        import torch
+        return True  # Ya está instalado
+    except ImportError:
+        print("📦 Instalando PyTorch dinámicamente...")
+        try:
+            # Instalar PyTorch CPU optimizado para cloud
+            subprocess.check_call([
+                sys.executable, "-m", "pip", "install",
+                "torch", "torchaudio", "torchvision",
+                "--index-url", "https://download.pytorch.org/whl/cpu"
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            
+            # Instalar dependencias de IA críticas
+            packages = [
+                "transformers", "huggingface-hub", "diffusers",
+                "basicsr", "gfpgan", "realesrgan", "facexlib",
+                "google-generativeai", "lpips", "tqdm"
+            ]
+            
+            for package in packages:
+                try:
+                    subprocess.check_call([
+                        sys.executable, "-m", "pip", "install", package
+                    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                except:
+                    pass  # Continuar si algunos fallan
+            
+            # Verificar instalación
+            import torch
+            print(f"✅ PyTorch {torch.__version__} instalado exitosamente!")
+            return True
+        except Exception as e:
+            print(f"❌ Error instalando PyTorch: {e}")
+            return False
+
+# Ejecutar instalación al inicio
+torch_installed = install_pytorch_if_missing()
 
 # --- Configuración Streamlit (PRIMERO) ---
 st.set_page_config(page_title="Restaurador Fotográfico AI 🧠🎨",
