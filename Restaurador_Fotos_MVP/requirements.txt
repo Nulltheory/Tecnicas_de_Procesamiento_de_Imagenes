@@ -4,10 +4,13 @@ numpy<2
 Pillow
 tqdm
 
-# --- PyTorch CPU (versión PyPI compatible con Streamlit Cloud) ---
-torch==2.2.2
-torchvision==0.17.2
-torchaudio==2.2.2
+# --- PyTorch CPU (instalación directa desde URL de wheel oficial) ---
+torch==2.2.2+cpu \
+    --find-links https://download.pytorch.org/whl/torch_stable.html
+torchvision==0.17.2+cpu \
+    --find-links https://download.pytorch.org/whl/torch_stable.html
+torchaudio==2.2.2+cpu \
+    --find-links https://download.pytorch.org/whl/torch_stable.html
 
 # --- Bibliotecas de IA/Restauración ---
 basicsr==1.4.2
