@@ -419,7 +419,7 @@ if imagen_cargada:
     # Centrar la imagen
     col_left, col_center, col_right = st.columns([1, 2, 1])
     with col_center:
-        st.image(img_pil, caption="🖼️ Imagen Original", use_column_width=True)
+        st.image(img_pil, caption="🖼️ Imagen Original", use_container_width=True)
 
     # Botón de acción prominente
     col_btn_left, col_btn_center, col_btn_right = st.columns([1, 1, 1])
@@ -573,11 +573,11 @@ if imagen_cargada:
 
             with col1:
                 st.markdown("**📷 Imagen Original**")
-                st.image(img_pil, use_column_width=True)
+                st.image(img_pil, use_container_width=True)
 
             with col2:
                 st.markdown("**✨ Imagen Restaurada**")
-                st.image(imagen_restaurada, use_column_width=True)
+                st.image(imagen_restaurada, use_container_width=True)
 
             # Verificar si las imágenes son diferentes
             img_original_array = np.array(img_pil)
@@ -626,3 +626,4 @@ if imagen_cargada:
                 mime="image/png"
 
             )
+
