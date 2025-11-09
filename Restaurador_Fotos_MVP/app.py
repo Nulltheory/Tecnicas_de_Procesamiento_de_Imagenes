@@ -21,20 +21,10 @@ modules_available = False
 try:
     import torch
     torch_available = True
-    version = torch.__version__
-    st.success(f"✅ PyTorch {version} disponible")
     if torch.cuda.is_available():
-        st.info(f"🎯 CUDA disponible: {torch.cuda.get_device_name(0)}")
-    else:
-        st.info("💻 Modo CPU - funcional")
-    # Verificar que torch funciona realmente
-    test_tensor = torch.tensor([1.0, 2.0, 3.0])
-    result = test_tensor.sum().item()
-    st.info(f"🔧 Test PyTorch: {result:.0f} ✓")
+        st.info(f"🎯 GPU disponible: {torch.cuda.get_device_name(0)}")
 except (ImportError, Exception) as e:
     torch_available = False
-    st.warning(f"❌ PyTorch no disponible: {e}. Funcionando en modo básico")
-    st.info("💡 La app funcionará con capacidades de procesamiento de imagen básicas")
 
 # Importaciones de módulos locales - REQUIEREN PyTorch
 modules_available = False
@@ -53,15 +43,14 @@ try:
     from utils.image_utils import resize_image
     from utils.ui_utils import mostrar_progreso, mostrar_resultado_con_descarga
     modules_available = True
-    st.success("🎯 Todos los módulos de IA cargados correctamente")
 except ImportError as e:
     modules_available = False
-    st.warning(f"⚠️ Módulos de IA avanzados no disponibles: {e}. Funcionando en modo básico")
-    st.info("💡 Asegúrate de que los archivos 'models' y 'utils' existen y que todas las librerías de PyTorch están instaladas en 'requirements.txt'")
+    st.warning(f"⚠️ Módulos de IA avanzados no disponibles: {e}")
+    st.info("💡 Funcionando en modo básico con capacidades limitadas")
 except Exception as e:
     modules_available = False
     st.warning(f"⚠️ Error cargando módulos avanzados: {e}")
-    st.info("💡 La app funcionará con capacidades básicas de procesamiento")
+    st.info("💡 La aplicación funcionará con capacidades básicas")
 
 st.title("🧠 Restaurador Fotográfico AI")
 st.markdown("**Transforma fotos antiguas dañadas con IA avanzada y obtén análisis detallado de mejoras**")
@@ -272,16 +261,6 @@ elif usar_preset_avanzado:
                                 disabled=not torch_available,
                                 help="Último paso: mejoras creativas avanzadas (requiere PyTorch)" if not torch_available else "Último paso: mejoras creativas avanzadas")
 
-st.sidebar.markdown("---")
-
-# --- Análisis de Calidad ---
-st.sidebar.markdown("### 📊 Análisis de Calidad")
-
-usar_gemini = st.sidebar.checkbox("Análisis Gemini", value=True, help="Análisis detallado y positivo con IA")
-usar_clip = st.sidebar.checkbox("Clasificación CLIP", value=torch_available,
-                              disabled=not torch_available,
-                              help="Análisis automático de contenido y calidad (requiere PyTorch)" if not torch_available else "Análisis automático de contenido y calidad")
-
 # Mostrar estado de capacidades
 st.sidebar.markdown("---")
 st.sidebar.markdown("### 🔧 Estado del Sistema")
@@ -296,58 +275,69 @@ else:
     st.sidebar.error("❌ Sistema limitado - Solo funciones básicas")
     st.sidebar.info("La aplicación funcionará con capacidades mínimas")
 
-# --- Configuración Avanzada (Collapsible) ---
-with st.sidebar.expander("⚙️ Configuración Avanzada", expanded=False):
-    st.markdown("**🎨 Modelos de Restauración Facial**")
+# --- Configuración Avanzada (Solo visible en Modo Avanzado) ---
+if usar_preset_avanzado:
+    with st.sidebar.expander("⚙️ Configuración Avanzada", expanded=False):
+        st.markdown("**🎨 Modelos de Restauración Facial**")
 
-    # Información sobre configuración por defecto
-    st.info("💡 **Configuración Optimizada**: Los parámetros están pre-configurados para obtener los mejores resultados en la mayoría de las imágenes antiguas. Modifica solo si tienes experiencia específica.")
+        # Información sobre configuración por defecto
+        st.info("💡 **Configuración Optimizada**: Los parámetros están pre-configurados para obtener los mejores resultados en la mayoría de las imágenes antiguas. Modifica solo si tienes experiencia específica.")
 
-    # CodeFormer settings
-    st.markdown("**CodeFormer**")
-    codeformer_fidelity = st.slider("Fidelidad", 0.1, 0.9, 0.7, 0.1,
-                                   help="0.7 = más fiel al original, menos agresivo")
-    codeformer_upscale = st.slider("Upscale", 1, 4, 1,
-                                  help="1x = sin pixelado adicional")
+        # CodeFormer settings
+        st.markdown("**CodeFormer**")
+        codeformer_fidelity = st.slider("Fidelidad", 0.1, 0.9, 0.7, 0.1,
+                                       help="0.7 = más fiel al original, menos agresivo")
+        codeformer_upscale = st.slider("Upscale", 1, 4, 1,
+                                      help="1x = sin pixelado adicional")
 
-    # GFPGAN settings
-    st.markdown("**GFPGAN**")
-    gfpgan_upscale = st.slider("Upscale", 1, 4, 1,
-                              help="1x = más conservador para evitar distorsiones")
+        # GFPGAN settings
+        st.markdown("**GFPGAN**")
+        gfpgan_upscale = st.slider("Upscale", 1, 4, 1,
+                                  help="1x = más conservador para evitar distorsiones")
 
-    st.markdown("---")
-    st.markdown("**🖼️ Mejoras de Imagen**")
+        st.markdown("---")
+        st.markdown("**🖼️ Mejoras de Imagen**")
 
-    # Real-ESRGAN settings
-    st.markdown("**Real-ESRGAN**")
-    realesrgan_model = st.selectbox("Modelo", ["x4plus", "x4plus-anime"],
-                                   index=0,  # x4plus como defecto
-                                   help="x4plus = recomendado para fotos reales")
+        # Real-ESRGAN settings
+        st.markdown("**Real-ESRGAN**")
+        realesrgan_model = st.selectbox("Modelo", ["x4plus", "x4plus-anime"],
+                                       index=0,  # x4plus como defecto
+                                       help="x4plus = recomendado para fotos reales")
 
-    # Stable Diffusion settings
-    st.markdown("**Stable Diffusion**")
-    sd_strength = st.slider("Fuerza de cambio", 0.1, 1.0, 0.5,
-                           help="0.5 = cambios más suaves y naturales")
-    sd_steps = st.slider("Pasos de inferencia", 10, 50, 15,
-                        help="15 = equilibrio entre calidad y velocidad")
+        # Stable Diffusion settings
+        st.markdown("**Stable Diffusion**")
+        sd_strength = st.slider("Fuerza de cambio", 0.1, 1.0, 0.5,
+                               help="0.5 = cambios más suaves y naturales")
+        sd_steps = st.slider("Pasos de inferencia", 10, 50, 15,
+                            help="15 = equilibrio entre calidad y velocidad")
 
-    st.markdown("---")
-    st.markdown("**🔧 Procesamiento Avanzado**")
+        st.markdown("---")
+        st.markdown("**🔧 Procesamiento Avanzado**")
 
-    # Noise reduction settings
-    st.markdown("**Reducción de Ruido**")
-    denoise_strength = st.slider("Intensidad", 1, 5, 1,
-                                help="1 = reducción muy suave, preserva detalles finos")
+        # Noise reduction settings
+        st.markdown("**Reducción de Ruido**")
+        denoise_strength = st.slider("Intensidad", 1, 5, 1,
+                                    help="1 = reducción muy suave, preserva detalles finos")
 
-    # Scratch removal settings
-    st.markdown("**Eliminación de Arañazos**")
-    scratch_sensitivity = st.slider("Sensibilidad", 1, 10, 2,
-                                   help="2 = muy conservador, preserva detalles estructurales")
+        # Scratch removal settings
+        st.markdown("**Eliminación de Arañazos**")
+        scratch_sensitivity = st.slider("Sensibilidad", 1, 10, 2,
+                                       help="2 = muy conservador, preserva detalles estructurales")
 
-    # Color enhancement settings
-    st.markdown("**Retoque de Color**")
-    color_boost = st.slider("Intensidad de color", 0.5, 2.0, 0.7,
-                           help="0.7 = mejora muy sutil, preserva colores originales")
+        # Color enhancement settings
+        st.markdown("**Retoque de Color**")
+        color_boost = st.slider("Intensidad de color", 0.5, 2.0, 0.7,
+                               help="0.7 = mejora muy sutil, preserva colores originales")
+
+st.sidebar.markdown("---")
+
+# --- Análisis de Calidad ---
+st.sidebar.markdown("### 📊 Análisis de Calidad")
+
+usar_gemini = st.sidebar.checkbox("Análisis Gemini", value=True, help="Análisis detallado y positivo con IA")
+usar_clip = st.sidebar.checkbox("Clasificación CLIP", value=torch_available,
+                              disabled=not torch_available,
+                              help="Análisis automático de contenido y calidad (requiere PyTorch)" if not torch_available else "Análisis automático de contenido y calidad")
 
 # --- Consejos y Limitaciones ---
 with st.sidebar.expander("💡 Consejos de Uso", expanded=False):
