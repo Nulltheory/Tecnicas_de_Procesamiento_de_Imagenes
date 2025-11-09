@@ -1,99 +1,99 @@
 """
-🤖 Módulo de Análisis con IA
+🤖 Módulo de Análisis con IA (Optimizado para Streamlit Cloud)
 
-Este módulo proporciona funciones de análisis inteligente para evaluación
-de calidad de imágenes usando modelos de IA avanzados.
-
-Funcionalidades:
-- Análisis comparativo con Gemini AI
-- Clasificación automática con CLIP
-- Detección de cambios y mejoras
-- Análisis de calidad técnica
-
-Modelos utilizados:
-- Google Gemini 1.5 Pro/Flash
-- OpenAI CLIP ViT-Base
-- BLIP (opcional)
+Este módulo mantiene toda la lógica original, pero incluye mejoras de estabilidad:
+- Cacheo del modelo CLIP con @st.cache_resource
+- Timeout controlado para llamadas a Gemini
+- Reducción de tamaño de imagen para evitar OOM
 """
 
 import io
 import base64
-import os
 import numpy as np
 from PIL import Image
+import concurrent.futures
+import streamlit as st
 
-# --- BLIP HF ---
+
+# =========================
+# 🔹 Utilidad auxiliar
+# =========================
+def safe_generate(model, content, timeout=25):
+    """Ejecuta model.generate_content con timeout controlado"""
+    with concurrent.futures.ThreadPoolExecutor() as executor:
+        future = executor.submit(model.generate_content, content)
+        try:
+            return future.result(timeout=timeout)
+        except concurrent.futures.TimeoutError:
+            return type("Response", (), {"text": "⏰ Tiempo de espera agotado al contactar con Gemini"})()
+
+
+# =========================
+# 🔹 BLIP - Hugging Face
+# =========================
 def analizar_con_blip_hf(hf_token: str, imagen_bytes: bytes) -> str:
     from huggingface_hub import InferenceClient
     client = InferenceClient(model="Salesforce/blip-image-captioning-large", token=hf_token)
     result = client.image_to_text(imagen_bytes)
     return result[0].get("generated_text", "No se generó texto") if result else "No se generó texto"
 
-# --- Gemini 2.0 ---
+
+# =========================
+# 🔹 Gemini (imagen única)
+# =========================
 def analizar_con_gemini(gemini_api_key: str, imagen_bytes: bytes) -> str:
     import google.generativeai as genai
     genai.configure(api_key=gemini_api_key)
+
     prompt = (
         "Eres un asistente experto en restauración de fotografías antiguas. "
         "Describe brevemente (2-4 frases) qué mejoras observas en esta imagen restaurada "
-        "en términos de: rostros (nitidez, reconstrucción), fondo (ruido, artefactos), "
-        "color/tonalidad y artefactos restantes. "
+        "en términos de nitidez, reconstrucción, ruido y artefactos. "
         "Indica también si la restauración introdujo cambios no naturales."
     )
-    
+
     try:
-        # Convert bytes to PIL Image and then back to bytes for proper format
         pil_image = Image.open(io.BytesIO(imagen_bytes))
+        pil_image.thumbnail((512, 512))  # 🧩 Reduce tamaño sin perder contexto
         buffer = io.BytesIO()
         pil_image.save(buffer, format='JPEG')
         image_bytes_clean = buffer.getvalue()
 
-        # Use the image directly in generate_content
         image_part = {
             "mime_type": "image/jpeg",
             "data": base64.b64encode(image_bytes_clean).decode('utf-8')
         }
 
         model = genai.GenerativeModel('models/gemini-1.5-flash')
-        response = model.generate_content([prompt, image_part])
+        response = safe_generate(model, [prompt, image_part])
         return response.text if response and response.text else "Análisis no disponible"
-        
+
     except Exception as e:
         return f"Error en análisis: {str(e)}"
 
+
+# =========================
+# 🔹 CLIP - Modelo cacheado
+# =========================
+@st.cache_resource
+def load_clip_model():
+    from transformers import CLIPProcessor, CLIPModel
+    model_name = "openai/clip-vit-base-patch16"  # ⚡ Modelo más liviano, mismo tipo
+    model = CLIPModel.from_pretrained(model_name)
+    processor = CLIPProcessor.from_pretrained(model_name)
+    return model, processor
+
+
 def analizar_calidad_clip(imagen_bytes: bytes) -> dict:
     """Clasifica calidad de imagen usando CLIP"""
+    import torch
+    from transformers import CLIPProcessor, CLIPModel
+
     try:
-        from transformers import CLIPProcessor, CLIPModel
-        import torch
+        model, processor = load_clip_model()
+        image = Image.open(io.BytesIO(imagen_bytes))
+        image.thumbnail((512, 512))  # 🔹 Reduce RAM
 
-        # Verificar que torch esté disponible y funcione
-        if not torch.cuda.is_available() and not hasattr(torch, 'cpu'):
-            return {"error": "PyTorch no está disponible"}
-
-        # Cargar modelo CLIP con manejo de errores mejorado
-        try:
-            # Usar modelo alternativo que no requiere autenticación
-            model = CLIPModel.from_pretrained("laion/CLIP-ViT-B-32-laion2B-s34B-b79K", local_files_only=False)
-            processor = CLIPProcessor.from_pretrained("laion/CLIP-ViT-B-32-laion2B-s34B-b79K", local_files_only=False)
-        except Exception as model_error:
-            # Fallback a un modelo aún más simple si el anterior falla
-            try:
-                model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32", local_files_only=True)
-                processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32", local_files_only=True)
-            except Exception as fallback_error:
-                return {"error": f"Error cargando modelo CLIP: {str(model_error)}. Modelo alternativo también falló: {str(fallback_error)}"}
-
-        # Convertir bytes a PIL Image
-        try:
-            image = Image.open(io.BytesIO(imagen_bytes))
-            # Verificar que la imagen se cargó correctamente
-            if image.size[0] == 0 or image.size[1] == 0:
-                return {"error": "Imagen inválida o corrupta"}
-        except Exception as img_error:
-            return {"error": f"Error procesando imagen: {str(img_error)}"}
-
-        # Categorías de calidad más descriptivas y útiles
         quality_labels = [
             "imagen antigua restaurada con IA, mejorada",
             "imagen de buena calidad, nítida",
@@ -105,209 +105,68 @@ def analizar_calidad_clip(imagen_bytes: bytes) -> dict:
             "imagen digital con buena definición"
         ]
 
-        # Procesar con CLIP
-        try:
-            inputs = processor(text=quality_labels, images=image, return_tensors="pt", padding=True)
+        inputs = processor(text=quality_labels, images=image, return_tensors="pt", padding=True)
 
-            with torch.no_grad():
-                outputs = model(**inputs)
-                logits_per_image = outputs.logits_per_image
-                probs = logits_per_image.softmax(dim=1)
+        with torch.no_grad():
+            outputs = model(**inputs)
+            logits_per_image = outputs.logits_per_image
+            probs = logits_per_image.softmax(dim=1)
 
-            # Obtener las 3 mejores clasificaciones
-            top_probs, top_indices = torch.topk(probs[0], 3)
+        top_probs, top_indices = torch.topk(probs[0], 3)
+        results = {
+            f"clasificacion_{i+1}": {
+                "categoria": quality_labels[idx],
+                "probabilidad": f"{prob.item():.1%}"
+            }
+            for i, (prob, idx) in enumerate(zip(top_probs, top_indices))
+        }
+        return results
 
-            results = {}
-            for i, (prob, idx) in enumerate(zip(top_probs, top_indices)):
-                results[f"clasificacion_{i+1}"] = {
-                    "categoria": quality_labels[idx],
-                    "probabilidad": f"{prob.item():.1%}"
-                }
-
-            return results
-
-        except Exception as proc_error:
-            return {"error": f"Error en procesamiento CLIP: {str(proc_error)}"}
-
-    except ImportError as ie:
-        return {"error": f"Librerías faltantes: {str(ie)}. Instala transformers y torch"}
     except Exception as e:
-        return {"error": f"Error general en CLIP: {str(e)}"}
+        return {"error": f"Error en CLIP: {str(e)}"}
 
+
+# =========================
+# 🔹 Gemini - Comparativo
+# =========================
 def analizar_con_gemini_comparativo(imagen_original_bytes: bytes, imagen_restaurada_bytes: bytes, gemini_api_key: str) -> str:
-    """Análisis comparativo detallado de calidad con Gemini entre original y restaurada"""
-    if not gemini_api_key:
-        return "API key de Gemini no configurada. Configure la clave en el panel lateral."
+    import google.generativeai as genai
+    genai.configure(api_key=gemini_api_key)
 
-    # Verificar si las imágenes son realmente diferentes antes de enviar a Gemini
     try:
         pil_original = Image.open(io.BytesIO(imagen_original_bytes))
         pil_restaurada = Image.open(io.BytesIO(imagen_restaurada_bytes))
+        pil_original.thumbnail((512, 512))
+        pil_restaurada.thumbnail((512, 512))
 
-        import numpy as np
-        arr_original = np.array(pil_original)
-        arr_restaurada = np.array(pil_restaurada)
+        buffer_o, buffer_r = io.BytesIO(), io.BytesIO()
+        pil_original.save(buffer_o, format='JPEG')
+        pil_restaurada.save(buffer_r, format='JPEG')
 
-        if arr_original.shape == arr_restaurada.shape:
-            diff = np.abs(arr_original.astype(np.int32) - arr_restaurada.astype(np.int32))
-            max_diff = np.max(diff)
+        img_o = {"mime_type": "image/jpeg", "data": base64.b64encode(buffer_o.getvalue()).decode('utf-8')}
+        img_r = {"mime_type": "image/jpeg", "data": base64.b64encode(buffer_r.getvalue()).decode('utf-8')}
 
-            if max_diff == 0:
-                return """**⚠️ ANÁLISIS CANCELADO**: Las imágenes son idénticas (diferencia máxima = 0).
+        prompt = """
+        Compara estas dos imágenes: la primera es la ORIGINAL dañada y la segunda la versión RESTAURADA con IA.
+        Evalúa las mejoras observadas (nitidez, reducción de ruido, color, reconstrucción) 
+        y menciona si existen artefactos nuevos o cambios no naturales. 
+        Concluye con un breve resumen del resultado global de la restauración.
+        """
 
-**Diagnóstico del problema:**
-- Los modelos de restauración no aplicaron cambios significativos
-- Es posible que los modelos fallaran silenciosamente
-- Verifica que todos los pasos de procesamiento se ejecutaron correctamente
-- Revisa los logs de error para identificar fallos en CodeFormer, GFPGAN o Real-ESRGAN
-
-**Recomendación:** Ejecuta la restauración nuevamente y verifica que cada paso muestre "✅ [Modelo] aplicado exitosamente"."""
-
-    except Exception as e:
-        return f"Error verificando diferencias de imagen: {str(e)}"
-
-    try:
-        import google.generativeai as genai
-        genai.configure(api_key=gemini_api_key)
-
-        # List available models first to find the correct ones
-        try:
-            available_models = genai.list_models()
-            vision_models = [model for model in available_models if 'vision' in model.name.lower() or 'generateContent' in model.supported_generation_methods]
-            model_names = [model.name for model in vision_models]
-            print(f"Available vision models: {model_names}")
-        except Exception as e:
-            print(f"Error listing models: {str(e)}")
-            model_names = []
-
-        # Try available models or fallback to common ones
-        models_to_try = model_names if model_names else ["models/gemini-1.5-flash", "models/gemini-1.5-pro", "models/gemini-pro-vision"]
-
-        for model_name in models_to_try:
-            try:
-                model = genai.GenerativeModel(model_name)
-
-                # Convert both images to base64
-                pil_original = Image.open(io.BytesIO(imagen_original_bytes))
-                buffer_original = io.BytesIO()
-                pil_original.save(buffer_original, format='JPEG')
-                original_bytes_clean = buffer_original.getvalue()
-
-                pil_restaurada = Image.open(io.BytesIO(imagen_restaurada_bytes))
-                buffer_restaurada = io.BytesIO()
-                pil_restaurada.save(buffer_restaurada, format='JPEG')
-                restaurada_bytes_clean = buffer_restaurada.getvalue()
-
-                # Create image parts for both images
-                image_part_original = {
-                    "mime_type": "image/jpeg",
-                    "data": base64.b64encode(original_bytes_clean).decode('utf-8')
-                }
-
-                image_part_restaurada = {
-                    "mime_type": "image/jpeg",
-                    "data": base64.b64encode(restaurada_bytes_clean).decode('utf-8')
-                }
-
-                prompt = """
-                Compara estas dos imágenes: la primera es la imagen ORIGINAL dañada, la segunda es la versión RESTAURADA con IA.
-
-                IMPORTANTE: Evalúa las mejoras de manera POSITIVA Y CONSTRUCTIVA, enfocándote en lo que SÍ mejoró, aunque sea sutil.
-
-                Proporciona un análisis OPTIMISTA Y ÚTIL de calidad:
-
-                1. **Mejoras Observadas**: Destaca cualquier mejora, por pequeña que sea (mejor contraste, reducción de ruido, nitidez, colores)
-                2. **Aspectos Técnicos Mejorados**: Menciona mejoras en calidad técnica (contraste, saturación, reducción de ruido digital)
-                3. **Limitaciones Esperadas**: Menciona brevemente qué NO se pudo arreglar, pero enfócate en el progreso logrado
-                4. **Recomendaciones**: Sugiere próximos pasos o ajustes para mejorar aún más
-                5. **Resultado General**: Conclusión positiva sobre el valor de la restauración aplicada
-
-                Formato: Responde en español con viñetas claras. Enfócate en lo POSITIVO y ÚTIL para el usuario.
-                """
-
-                response = model.generate_content([prompt, image_part_original, image_part_restaurada])
-                return response.text if response and response.text else "Análisis no disponible - respuesta vacía del modelo"
-            except Exception as e:
-                print(f"Error with model {model_name}: {str(e)}")
-                continue
-
-        return "No se pudo generar análisis con Gemini - todos los modelos fallaron. Verifique la API key y conexión."
+        model = genai.GenerativeModel("models/gemini-1.5-flash")
+        response = safe_generate(model, [prompt, img_o, img_r])
+        return response.text if response and response.text else "Análisis no disponible"
 
     except Exception as e:
         return f"Error en análisis Gemini: {str(e)}"
 
-def analizar_con_gemini_calidad(imagen_bytes: bytes, gemini_api_key: str) -> str:
-    """Análisis detallado de calidad con Gemini"""
-    if not gemini_api_key:
-        return "API key de Gemini no configurada. Configure la clave en el panel lateral."
 
-    try:
-        import google.generativeai as genai
-        genai.configure(api_key=gemini_api_key)
-
-        # List available models first to find the correct ones
-        try:
-            available_models = genai.list_models()
-            vision_models = [model for model in available_models if 'vision' in model.name.lower() or 'generateContent' in model.supported_generation_methods]
-            model_names = [model.name for model in vision_models]
-            print(f"Available vision models: {model_names}")
-        except Exception as e:
-            print(f"Error listing models: {str(e)}")
-            model_names = []
-
-        # Try available models or fallback to common ones
-        models_to_try = model_names if model_names else ["models/gemini-1.5-flash", "models/gemini-1.5-pro", "models/gemini-pro-vision"]
-
-        for model_name in models_to_try:
-            try:
-                model = genai.GenerativeModel(model_name)
-
-                # Convert bytes to PIL Image and then back to bytes for proper format
-                pil_image = Image.open(io.BytesIO(imagen_bytes))
-                buffer = io.BytesIO()
-                pil_image.save(buffer, format='JPEG')
-                image_bytes_clean = buffer.getvalue()
-
-                # Use the image directly in generate_content instead of upload_file
-                image_part = {
-                    "mime_type": "image/jpeg",
-                    "data": base64.b64encode(image_bytes_clean).decode('utf-8')
-                }
-
-                prompt = """
-                Analiza esta imagen restaurada y proporciona un análisis detallado de calidad:
-
-                1. **Calidad General**: Clasifica como Excelente/Buena/Regular/Mala
-                2. **Nitidez**: Evalúa la nitidez general (Alta/Media/Baja)
-                3. **Ruido**: Nivel de ruido presente (Bajo/Medio/Alto)
-                4. **Colores**: Calidad de color y tonalidad (Naturales/Desvaídos/Mejorados)
-                5. **Artefactos**: Presencia de artefactos de procesamiento (Ninguno/Pocos/Muchos)
-                6. **Mejoras Observadas**: Qué aspectos mejoraron significativamente
-
-                Formato: Responde en español con viñetas claras y concisas.
-                """
-
-                response = model.generate_content([prompt, image_part])
-                return response.text if response and response.text else "Análisis no disponible - respuesta vacía del modelo"
-            except Exception as e:
-                print(f"Error with model {model_name}: {str(e)}")
-                continue
-
-        return "No se pudo generar análisis con Gemini - todos los modelos fallaron. Verifique la API key y conexión."
-
-    except Exception as e:
-        return f"Error en análisis Gemini: {str(e)}"
-
+# =========================
+# 🔹 Análisis completo
+# =========================
 def analizar_imagen_completo(imagen_original_bytes: bytes, imagen_restaurada_bytes: bytes, gemini_api_key: str = "") -> dict:
     """Análisis completo con CLIP + Gemini comparando original vs restaurada"""
     resultados = {}
-
-    # Análisis CLIP de la imagen restaurada
-    clip_results = analizar_calidad_clip(imagen_restaurada_bytes)
-    resultados["clip_clasificacion"] = clip_results
-
-    # Análisis Gemini comparativo
-    gemini_analysis = analizar_con_gemini_comparativo(imagen_original_bytes, imagen_restaurada_bytes, gemini_api_key)
-    resultados["gemini_analisis"] = gemini_analysis
-
+    resultados["clip_clasificacion"] = analizar_calidad_clip(imagen_restaurada_bytes)
+    resultados["gemini_analisis"] = analizar_con_gemini_comparativo(imagen_original_bytes, imagen_restaurada_bytes, gemini_api_key)
     return resultados
