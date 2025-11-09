@@ -1,7 +1,7 @@
-# Requisitos optimizados para Streamlit Cloud
-# PyTorch viene preinstalado en Streamlit Cloud
+# Deployment Requirements for Streamlit Cloud
+# Optimized for AI photo restoration with 9 models
 
-# Dependencias principales
+# Core dependencies
 streamlit>=1.28.0
 numpy>=1.24.0
 pillow>=10.0.0
@@ -10,19 +10,19 @@ scipy>=1.11.0
 matplotlib>=3.7.0
 requests>=2.31.0
 
-# Modelos de IA opcionales (se cargan dinámicamente)
-# Descomenta si necesitas funciones avanzadas:
-# basicsr
-# gfpgan
-# realesrgan
-# facexlib
-# transformers
-# diffusers
-# huggingface-hub
-# google-generativeai
-# lpips
-# tqdm
+# PyTorch (essential for AI models)
+torch>=2.0.0
+torchaudio>=2.0.0
+torchvision>=0.15.0
 
-# Modelos de ejemplo y assets
-# Los modelos pesados se cargan on-demand desde Hugging Face
-# para reducir el tamaño de deployment
+# AI Model dependencies
+transformers>=4.35.0
+huggingface-hub>=0.17.0
+diffusers>=0.21.0
+basicsr>=1.4.2
+gfpgan>=1.3.8
+realesrgan>=0.3.0
+facexlib>=0.2.5
+google-generativeai>=0.3.0
+lpips>=0.1.4
+tqdm>=4.66.0
