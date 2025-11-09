@@ -652,6 +652,7 @@ if imagen_cargada:
                 st.markdown("**✨ Imagen Restaurada**")
                 st.image(imagen_restaurada, use_container_width=True)
 
+
             # Verificar si las imágenes son diferentes
             img_original_array = np.array(img_pil)
             img_restaurada_array = np.array(imagen_restaurada)
