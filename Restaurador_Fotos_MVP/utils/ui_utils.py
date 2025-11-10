@@ -17,41 +17,6 @@ def mostrar_progreso(operacion: str, progreso: int):
         st.info(f"🔄 {operacion}: {progreso}%")
 
 
-def mostrar_resultado_con_descarga(imagen: Image.Image, nombre_archivo: str, titulo: str = "Imagen Restaurada"):
-    """Muestra resultado con opciones de descarga"""
-    
-    # Preparar opciones de descarga
-    col1, col2 = st.columns(2)
-    
-    with col1:
-        # Descarga JPEG
-        buffer = io.BytesIO()
-        imagen.save(buffer, format='JPEG', quality=95)
-        buffer.seek(0)
-        
-        st.download_button(
-            label="📥 Descargar JPEG (Alta calidad)",
-            data=buffer,
-            file_name=f"restaurada_{nombre_archivo}.jpg",
-            mime="image/jpeg",
-            use_container_width=True
-        )
-    
-    with col2:
-        # Descarga PNG
-        buffer_png = io.BytesIO()
-        imagen.save(buffer_png, format='PNG')
-        buffer_png.seek(0)
-        
-        st.download_button(
-            label="📥 Descargar PNG (Sin pérdida)",
-            data=buffer_png,
-            file_name=f"restaurada_{nombre_archivo}.png",
-            mime="image/png",
-            use_container_width=True
-        )
-
-
 def mostrar_info_sistema(torch_available: bool, modules_available: bool):
     """Muestra información del estado del sistema"""
     with st.expander("🔧 Información del Sistema", expanded=False):
@@ -129,3 +94,4 @@ def mostrar_errores_graciosos(operacion: str, error: Exception):
     """Muestra errores de manera user-friendly"""
     st.error(f"❌ Error en {operacion}: {str(error)}")
     st.info("💡 La aplicación continuará con las funciones disponibles")
+
