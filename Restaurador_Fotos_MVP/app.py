@@ -739,34 +739,28 @@ if imagen_cargada:
             except Exception as e:
                 st.info("ℹ️ CLIP no disponible en este entorno - usando solo análisis Gemini")
 
-        # Botones de descarga
+        # Botón de descarga prominente
         st.markdown("### ⬇️ Descargar Imagen Restaurada")
-        col1, col2 = st.columns(2)
+        col_btn_left, col_btn_center, col_btn_right = st.columns([1, 2, 1])
+        with col_btn_center:
+            try:
+                mostrar_resultado_con_descarga(imagen_restaurada, "imagen_restaurada.png")
+            except NameError:
+                  st.download_button(
+                     label="⬇️ Descargar Imagen Restaurada",
+                     data=io.BytesIO(imagen_restaurada.tobytes()), # Simplificado para funcionar sin la utilidad
+                     file_name="foto_restaurada.png",
+                     mime="image/png",
+                     use_container_width=True,
+                     type="primary"
+                 )
 
-        with col1:
-            # Descarga JPEG
-            buffer = io.BytesIO()
-            imagen_restaurada.save(buffer, format='JPEG', quality=95)
-            buffer.seek(0)
-
+        # Segundo botón de descarga (PNG)
+        col_png_left, col_png_center, col_png_right = st.columns([1, 2, 1])
+        with col_png_center:
             st.download_button(
-                label="📥 Descargar JPEG (Alta calidad)",
-                data=buffer,
-                file_name="imagen_restaurada.jpg",
-                mime="image/jpeg",
-                use_container_width=True,
-                type="primary"
-            )
-
-        with col2:
-            # Descarga PNG
-            buffer_png = io.BytesIO()
-            imagen_restaurada.save(buffer_png, format='PNG')
-            buffer_png.seek(0)
-
-            st.download_button(
-                label="📸 Descargar PNG (Sin pérdida)",
-                data=buffer_png,
+                label="📸 Descargar como PNG",
+                data=io.BytesIO(imagen_restaurada.tobytes()),
                 file_name="imagen_restaurada.png",
                 mime="image/png",
                 use_container_width=True
