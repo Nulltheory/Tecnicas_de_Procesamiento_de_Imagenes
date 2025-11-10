@@ -542,7 +542,10 @@ if imagen_cargada:
                     st.success("✅ Eliminación de arañazos aplicada exitosamente")
                     procesamiento_aplicado = True
                 except Exception as e:
-                    st.warning(f"Error en eliminación de arañazos: {e}. Continuando sin inpainting.")
+                    if "libGL.so.1" in str(e):
+                        st.info("ℹ️ Eliminación de arañazos no disponible en este entorno - omitiendo este paso")
+                    else:
+                        st.warning(f"Error en eliminación de arañazos: {e}. Continuando sin inpainting.")
 
         # 4️⃣ Reparación de manchas blancas / pérdidas locales
         if usar_spot_removal and torch_available and modules_available:
@@ -587,7 +590,10 @@ if imagen_cargada:
                     st.success("✅ Reducción de ruido aplicada exitosamente")
                     procesamiento_aplicado = True
                 except Exception as e:
-                    st.warning(f"Error en reducción de ruido: {e}. Continuando sin denoising.")
+                    if "libGL.so.1" in str(e):
+                        st.info("ℹ️ Reducción de ruido no disponible en este entorno - omitiendo este paso")
+                    else:
+                        st.warning(f"Error en reducción de ruido: {e}. Continuando sin denoising.")
 
         # ✨ FASE 4 – Acabado final
         st.markdown("#### ✨ Fase 4: Acabado Final")
@@ -636,6 +642,7 @@ if imagen_cargada:
         elif usar_sd:
             st.info("ℹ️ Stable Diffusion requiere PyTorch - omitiendo este paso")
 
+        # Verificar si se aplicó algún procesamiento (Mantenemos la lógica de comparación)
         # Verificar si se aplicó algún procesamiento (Mantenemos la lógica de comparación)
         # --- Resultados de Restauración ---
         st.markdown("### 🎯 Resultados de Restauración")
@@ -732,28 +739,34 @@ if imagen_cargada:
             except Exception as e:
                 st.info("ℹ️ CLIP no disponible en este entorno - usando solo análisis Gemini")
 
-        # Botón de descarga prominente
+        # Botones de descarga
         st.markdown("### ⬇️ Descargar Imagen Restaurada")
-        col_btn_left, col_btn_center, col_btn_right = st.columns([1, 2, 1])
-        with col_btn_center:
-            try:
-                mostrar_resultado_con_descarga(imagen_restaurada, "imagen_restaurada.png")
-            except NameError:
-                 st.download_button(
-                    label="⬇️ Descargar Imagen Restaurada",
-                    data=io.BytesIO(imagen_restaurada.tobytes()), # Simplificado para funcionar sin la utilidad
-                    file_name="foto_restaurada.png",
-                    mime="image/png",
-                    use_container_width=True,
-                    type="primary"
-                )
+        col1, col2 = st.columns(2)
 
-        # Segundo botón de descarga (PNG)
-        col_png_left, col_png_center, col_png_right = st.columns([1, 2, 1])
-        with col_png_center:
+        with col1:
+            # Descarga JPEG
+            buffer = io.BytesIO()
+            imagen_restaurada.save(buffer, format='JPEG', quality=95)
+            buffer.seek(0)
+
             st.download_button(
-                label="📸 Descargar como PNG",
-                data=io.BytesIO(imagen_restaurada.tobytes()),
+                label="📥 Descargar JPEG (Alta calidad)",
+                data=buffer,
+                file_name="imagen_restaurada.jpg",
+                mime="image/jpeg",
+                use_container_width=True,
+                type="primary"
+            )
+
+        with col2:
+            # Descarga PNG
+            buffer_png = io.BytesIO()
+            imagen_restaurada.save(buffer_png, format='PNG')
+            buffer_png.seek(0)
+
+            st.download_button(
+                label="📸 Descargar PNG (Sin pérdida)",
+                data=buffer_png,
                 file_name="imagen_restaurada.png",
                 mime="image/png",
                 use_container_width=True
