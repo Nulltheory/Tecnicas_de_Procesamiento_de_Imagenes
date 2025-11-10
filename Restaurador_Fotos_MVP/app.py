@@ -739,22 +739,6 @@ if imagen_cargada:
             except Exception as e:
                 st.info("ℹ️ CLIP no disponible en este entorno - usando solo análisis Gemini")
 
-        # Botón de descarga prominente
-        st.markdown("### ⬇️ Descargar Imagen Restaurada")
-        col_btn_left, col_btn_center, col_btn_right = st.columns([1, 2, 1])
-        with col_btn_center:
-            try:
-                mostrar_resultado_con_descarga(imagen_restaurada, "imagen_restaurada.png")
-            except NameError:
-                  st.download_button(
-                     label="⬇️ Descargar Imagen Restaurada",
-                     data=io.BytesIO(imagen_restaurada.tobytes()), # Simplificado para funcionar sin la utilidad
-                     file_name="foto_restaurada.png",
-                     mime="image/png",
-                     use_container_width=True,
-                     type="primary"
-                 )
-
         # Segundo botón de descarga (PNG)
         col_png_left, col_png_center, col_png_right = st.columns([1, 2, 1])
         with col_png_center:
