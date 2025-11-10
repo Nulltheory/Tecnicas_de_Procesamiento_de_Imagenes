@@ -739,12 +739,17 @@ if imagen_cargada:
             except Exception as e:
                 st.info("ℹ️ CLIP no disponible en este entorno - usando solo análisis Gemini")
 
-        # Segundo botón de descarga (PNG)
+
+        # Botón de descarga (PNG)
         col_png_left, col_png_center, col_png_right = st.columns([1, 2, 1])
         with col_png_center:
+            buffer_png = io.BytesIO()
+            imagen_restaurada.save(buffer_png, format='PNG')
+            buffer_png.seek(0)
+
             st.download_button(
                 label="📸 Descargar como PNG",
-                data=io.BytesIO(imagen_restaurada.tobytes()),
+                data=buffer_png.getvalue(),
                 file_name="imagen_restaurada.png",
                 mime="image/png",
                 use_container_width=True
