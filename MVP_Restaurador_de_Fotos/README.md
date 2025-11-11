@@ -192,14 +192,23 @@ streamlit run app.py
 
 #### **Modo Avanzado**
 - Control completo con presets inteligentes
+- **🔧 Parámetros de Algoritmos**: Sección dedicada para ajustar parámetros de modelos
 - Acceso a todos los algoritmos de reparación
 - Configuración conservadora por defecto
 
 ### ⚙️ **Configuración Avanzada**
-- **CodeFormer**: Fidelidad 0.1-0.9 (0.7 recomendado)
-- **Real-ESRGAN**: Modelo x4plus para fotos reales
-- **Stable Diffusion**: Fuerza 0.1-1.0 (0.5 para cambios naturales)
-- **Reducción de ruido**: Intensidad 1-5 (2 para resultados naturales)
+
+#### **🔧 Parámetros de Algoritmos (Nuevo en Modo Avanzado)**
+- **🎨 Modelos de Restauración Facial**:
+  - **CodeFormer**: Fidelidad 0.1-0.9 (0.7 recomendado), Upscale 1-4x
+  - **GFPGAN**: Upscale 1-4x (1x recomendado para evitar distorsiones)
+- **🖼️ Mejoras de Imagen**:
+  - **Real-ESRGAN**: Modelos x4plus/x4plus-anime
+  - **Stable Diffusion**: Fuerza 0.1-1.0 (0.5 para cambios naturales), Pasos 10-50
+- **🔧 Procesamiento Avanzado**:
+  - **Reducción de ruido**: Intensidad 1-5 (1 para detalles finos)
+  - **Eliminación de arañazos**: Sensibilidad 1-10 (2 conservador)
+  - **Retoque de color**: Intensidad 0.5-2.0 (0.7 sutil)
 
 ### 📊 **Análisis de Resultados**
 - **Comparación visual** lado a lado
