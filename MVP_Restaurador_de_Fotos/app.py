@@ -188,6 +188,59 @@ modo_seleccionado = st.sidebar.radio(
     help="Modo Básico: Reparación estructural conservadora | Modo Avanzado: Control completo con ajustes tonales"
 )
 
+# --- Parámetros de Algoritmos (Solo Modo Avanzado) ---
+if usar_preset_avanzado:
+    st.sidebar.markdown("### 🔧 Parámetros de Algoritmos")
+
+    with st.sidebar.expander("⚙️ Ajustes de Modelos", expanded=False):
+        st.markdown("**🎨 Modelos de Restauración Facial**")
+
+        # CodeFormer settings
+        st.markdown("**CodeFormer**")
+        codeformer_fidelity = st.slider("Fidelidad", 0.1, 0.9, 0.7, 0.1,
+                                       help="0.7 = más fiel al original, menos agresivo")
+        codeformer_upscale = st.slider("Upscale", 1, 4, 1,
+                                      help="1x = sin pixelado adicional")
+
+        # GFPGAN settings
+        st.markdown("**GFPGAN**")
+        gfpgan_upscale = st.slider("Upscale", 1, 4, 1,
+                                  help="1x = más conservador para evitar distorsiones")
+
+        st.markdown("---")
+        st.markdown("**🖼️ Mejoras de Imagen**")
+
+        # Real-ESRGAN settings
+        st.markdown("**Real-ESRGAN**")
+        realesrgan_model = st.selectbox("Modelo", ["x4plus", "x4plus-anime"],
+                                       index=0,  # x4plus como defecto
+                                       help="x4plus = recomendado para fotos reales")
+
+        # Stable Diffusion settings
+        st.markdown("**Stable Diffusion**")
+        sd_strength = st.slider("Fuerza de cambio", 0.1, 1.0, 0.5,
+                               help="0.5 = cambios más suaves y naturales")
+        sd_steps = st.slider("Pasos de inferencia", 10, 50, 15,
+                            help="15 = equilibrio entre calidad y velocidad")
+
+        st.markdown("---")
+        st.markdown("**🔧 Procesamiento Avanzado**")
+
+        # Noise reduction settings
+        st.markdown("**Reducción de Ruido**")
+        denoise_strength = st.slider("Intensidad", 1, 5, 1,
+                                    help="1 = reducción muy suave, preserva detalles finos")
+
+        # Scratch removal settings
+        st.markdown("**Eliminación de Arañazos**")
+        scratch_sensitivity = st.slider("Sensibilidad", 1, 10, 2,
+                                       help="2 = muy conservador, preserva detalles estructurales")
+
+        # Color enhancement settings
+        st.markdown("**Retoque de Color**")
+        color_boost = st.slider("Intensidad de color", 0.5, 2.0, 0.7,
+                               help="0.7 = mejora muy sutil, preserva colores originales")
+
 # --- Análisis de Calidad ---
 st.sidebar.markdown("### 📊 Análisis de Calidad")
 
@@ -308,58 +361,6 @@ elif usar_preset_avanzado:
             *Control completo con ajustes personalizables*
             """)
 
-        # Configuración Avanzada debajo del pipeline
-        with st.sidebar.expander("⚙️ Configuración Avanzada", expanded=False):
-            st.markdown("**🎨 Modelos de Restauración Facial**")
-
-            # Información sobre configuración por defecto
-            st.info("💡 **Configuración Optimizada**: Los parámetros están pre-configurados para obtener los mejores resultados en la mayoría de las imágenes antiguas. Modifica solo si tienes experiencia específica.")
-
-            # CodeFormer settings
-            st.markdown("**CodeFormer**")
-            codeformer_fidelity = st.slider("Fidelidad", 0.1, 0.9, 0.7, 0.1,
-                                           help="0.7 = más fiel al original, menos agresivo")
-            codeformer_upscale = st.slider("Upscale", 1, 4, 1,
-                                          help="1x = sin pixelado adicional")
-
-            # GFPGAN settings
-            st.markdown("**GFPGAN**")
-            gfpgan_upscale = st.slider("Upscale", 1, 4, 1,
-                                      help="1x = más conservador para evitar distorsiones")
-
-            st.markdown("---")
-            st.markdown("**🖼️ Mejoras de Imagen**")
-
-            # Real-ESRGAN settings
-            st.markdown("**Real-ESRGAN**")
-            realesrgan_model = st.selectbox("Modelo", ["x4plus", "x4plus-anime"],
-                                           index=0,  # x4plus como defecto
-                                           help="x4plus = recomendado para fotos reales")
-
-            # Stable Diffusion settings
-            st.markdown("**Stable Diffusion**")
-            sd_strength = st.slider("Fuerza de cambio", 0.1, 1.0, 0.5,
-                                   help="0.5 = cambios más suaves y naturales")
-            sd_steps = st.slider("Pasos de inferencia", 10, 50, 15,
-                                help="15 = equilibrio entre calidad y velocidad")
-
-            st.markdown("---")
-            st.markdown("**🔧 Procesamiento Avanzado**")
-
-            # Noise reduction settings
-            st.markdown("**Reducción de Ruido**")
-            denoise_strength = st.slider("Intensidad", 1, 5, 1,
-                                        help="1 = reducción muy suave, preserva detalles finos")
-
-            # Scratch removal settings
-            st.markdown("**Eliminación de Arañazos**")
-            scratch_sensitivity = st.slider("Sensibilidad", 1, 10, 2,
-                                           help="2 = muy conservador, preserva detalles estructurales")
-
-            # Color enhancement settings
-            st.markdown("**Retoque de Color**")
-            color_boost = st.slider("Intensidad de color", 0.5, 2.0, 0.7,
-                                   help="0.7 = mejora muy sutil, preserva colores originales")
     else:
         # Configuración completamente manual
         st.sidebar.markdown("**🎯 Configuración Manual Completa**")
