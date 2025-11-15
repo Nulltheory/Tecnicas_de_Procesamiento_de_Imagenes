@@ -188,6 +188,9 @@ modo_seleccionado = st.sidebar.radio(
     help="Modo Básico: Reparación estructural conservadora | Modo Avanzado: Control completo con ajustes tonales"
 )
 
+usar_preset_basico = (modo_seleccionado == "Modo Básico (Recomendado)")
+usar_preset_avanzado = (modo_seleccionado == "Modo Avanzado")
+
 # --- Parámetros de Algoritmos (Solo Modo Avanzado) ---
 if usar_preset_avanzado:
     st.sidebar.markdown("### 🔧 Parámetros de Algoritmos")
@@ -254,9 +257,6 @@ if 'usar_gemini' not in locals():
     usar_gemini = True
 if 'usar_clip' not in locals():
     usar_clip = torch_available
-
-usar_preset_basico = (modo_seleccionado == "Modo Básico (Recomendado)")
-usar_preset_avanzado = (modo_seleccionado == "Modo Avanzado")
 
 if usar_preset_basico:
     # Preset básico equilibrado - calidad óptima sin riesgos
