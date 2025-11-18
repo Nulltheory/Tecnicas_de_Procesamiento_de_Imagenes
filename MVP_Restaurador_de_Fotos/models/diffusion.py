@@ -1,152 +1,135 @@
 """
 🖼️ Módulo de Restauración Fotográfica - Optimizado para Streamlit Cloud
 
-Esta versión mantiene TODAS las funcionalidades originales (Real-ESRGAN, CodeFormer, GFPGAN,
-Stable Diffusion, múltiples mejoras básicas).
-- No importa OpenCV en ningún punto.
-- Loaders on-demand para modelos pesados (si existen).
-- Fallbacks completos con PIL + NumPy para todas las funcionalidades críticas.
-- Mantiene nombres de funciones para compatibilidad con tu app.py.
+Este módulo contiene funciones de procesamiento de imágenes con fallbacks
+robustos para entornos de deployment.
+
+Algoritmos incluidos:
+- Real-ESRGAN: Upscaling de ultra-alta calidad (on-demand)
+- CodeFormer: Restauración facial sin recortes (on-demand)
+- GFPGAN: Restauración facial alternativa (on-demand)
+- CLAHE: Contraste adaptativo (básico)
+- Unsharp Mask: Afilado de detalles (básico)
+- Reducción de ruido avanzada (básico)
+- Reparación de arañazos y manchas (básico)
+- Stable Diffusion con ControlNet (on-demand)
 """
 
-import os
 import io
-import warnings
-import urllib.request
-from PIL import Image, ImageFilter, ImageEnhance, ImageOps
+from PIL import Image
 import numpy as np
+import os
+import urllib.request
+import warnings
 
-# ---------------------------
-# PyTorch detection
-# ---------------------------
-device = "cpu"
+# Configuración global de dispositivo
+device = "cpu"  # Por defecto CPU, se actualizará si PyTorch está disponible
 torch_available = False
+
+# Verificar PyTorch de forma segura
 try:
     import torch
     torch_available = True
     device = "cuda" if torch.cuda.is_available() else "cpu"
-except Exception:
+except ImportError:
     torch_available = False
-    warnings.warn("PyTorch no disponible - funcionando en modo básico (sin aceleración)")
+    warnings.warn("PyTorch no disponible - funcionando en modo básico")
 
-# ---------------------------
-# Model availability flags (on-demand)
-# ---------------------------
+# Importaciones opcionales - se cargarán on-demand
 _real_esrgan_available = False
 _codeformer_available = False
 _gfpgan_available = False
 _stable_diffusion_available = False
 
-# ---------------------------
-# Utility conversions
-# ---------------------------
-def pil_to_np(img: Image.Image) -> np.ndarray:
-    """PIL RGB -> numpy RGB uint8"""
-    if isinstance(img, Image.Image):
-        arr = np.array(img.convert("RGB"), dtype=np.uint8)
-        return arr
-    elif isinstance(img, np.ndarray):
-        return img
-    else:
-        raise TypeError("Unsupported image type for pil_to_np")
 
-def np_to_pil(arr: np.ndarray) -> Image.Image:
-    """numpy RGB uint8 -> PIL"""
-    arr_clipped = np.clip(arr, 0, 255).astype(np.uint8)
-    return Image.fromarray(arr_clipped)
-
-# ---------------------------
-# On-demand model loaders
-# ---------------------------
 def _load_real_esrgan():
+    """Carga Real-ESRGAN de forma on-demand"""
     global _real_esrgan_available
     if _real_esrgan_available or not torch_available:
         return _real_esrgan_available
+    
     try:
-        # Attempt to import realtime modules; if fail, mark False
-        from basicsr.archs.rrdbnet_arch import RRDBNet  # type: ignore
-        from realesrgan import RealESRGANer  # type: ignore
+        from basicsr.archs.rrdbnet_arch import RRDBNet
+        from realesrgan import RealESRGANer
         _real_esrgan_available = True
         return True
-    except Exception as e:
+    except ImportError as e:
         print(f"Real-ESRGAN no disponible: {e}")
         return False
 
+
 def _load_codeformer():
+    """Carga CodeFormer de forma on-demand"""
     global _codeformer_available
     if _codeformer_available or not torch_available:
         return _codeformer_available
+    
     try:
-        from facexlib.utils.face_restoration_helper import FaceRestoreHelper  # type: ignore
-        from basicsr.archs.rrdbnet_arch import RRDBNet  # type: ignore
+        from facexlib.utils.face_restoration_helper import FaceRestoreHelper
+        from basicsr.archs.rrdbnet_arch import RRDBNet
+        from basicsr.utils import img2tensor, tensor2img
         _codeformer_available = True
         return True
-    except Exception as e:
+    except ImportError as e:
         print(f"CodeFormer no disponible: {e}")
         return False
 
+
 def _load_gfpgan():
+    """Carga GFPGAN de forma on-demand"""
     global _gfpgan_available
     if _gfpgan_available or not torch_available:
         return _gfpgan_available
+    
     try:
-        from gfpgan import GFPGANer  # type: ignore
+        from gfpgan import GFPGANer
         _gfpgan_available = True
         return True
-    except Exception as e:
+    except ImportError as e:
         print(f"GFPGAN no disponible: {e}")
         return False
 
+
 def _load_stable_diffusion():
+    """Carga Stable Diffusion de forma on-demand"""
     global _stable_diffusion_available
     if _stable_diffusion_available or not torch_available:
         return _stable_diffusion_available
+    
     try:
-        from diffusers import StableDiffusionImg2ImgPipeline, ControlNetModel  # type: ignore
+        from diffusers import StableDiffusionImg2ImgPipeline, ControlNetModel
         _stable_diffusion_available = True
         return True
-    except Exception as e:
+    except ImportError as e:
         print(f"Stable Diffusion no disponible: {e}")
         return False
 
-# ---------------------------
-# Fallback basic ops (PIL)
-# ---------------------------
-def _fallback_enhancement(img: Image.Image, method: str = "fallback") -> Image.Image:
-    try:
-        out = img.filter(ImageFilter.GaussianBlur(radius=1))
-        out = ImageEnhance.Sharpness(out).enhance(1.1)
-        return out
-    except Exception:
-        return img
-
-def _fallback_upscale(img: Image.Image) -> Image.Image:
-    w, h = img.size
-    return img.resize((w * 2, h * 2), Image.LANCZOS)
-
-# ---------------------------
-# CodeFormer (on-demand) - same semantics as original, but no cv2 usage here
-# ---------------------------
+# --- CodeFormer (alternative to GFPGAN for full image processing) ---
 def restaurar_imagen_codeformer(img: Image.Image, fidelity: float = 0.5, upscale_factor: int = 1) -> Image.Image:
+    """Use CodeFormer for face restoration without cropping"""
     if not _load_codeformer():
+        # Fallback a enhancement básico con OpenCV
         return _fallback_enhancement(img, "CodeFormer")
+    
     try:
+        from facexlib.utils.face_restoration_helper import FaceRestoreHelper
+        from basicsr.archs.rrdbnet_arch import RRDBNet
         import torch
-        from facexlib.utils.face_restoration_helper import FaceRestoreHelper  # type: ignore
-        from basicsr.archs.rrdbnet_arch import RRDBNet  # type: ignore
 
-        # download or fallback local model
+        # Try to load from Hugging Face Hub first
         try:
             from huggingface_hub import hf_hub_download
             model_path = hf_hub_download("facebookresearch/codeformer", "codeformer.pth")
-        except Exception:
-            model_path = "CodeFormer.pth"
+        except:
+            # Fallback to local file or download
+            model_path = 'CodeFormer.pth'
             if not os.path.exists(model_path):
                 urllib.request.urlretrieve(
-                    "https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/codeformer.pth",
+                    'https://github.com/sczhou/CodeFormer/releases/download/v0.1.0/codeformer.pth',
                     model_path
                 )
 
+        # Initialize the face helper with configurable upscale
         face_helper = FaceRestoreHelper(
             upscale_factor=upscale_factor,
             face_size=512,
@@ -157,454 +140,604 @@ def restaurar_imagen_codeformer(img: Image.Image, fidelity: float = 0.5, upscale
             device=device
         )
 
-        codeformer_net = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=32, num_block=5, num_grow_ch=128, scale=1)
+        # Load CodeFormer model
+        codeformer_net = RRDBNet(
+            num_in_ch=3,
+            num_out_ch=3,
+            num_feat=32,
+            num_block=5,
+            num_grow_ch=128,
+            scale=1
+        )
+
         checkpoint = torch.load(model_path, map_location=device)
         codeformer_net.load_state_dict(checkpoint['params'])
         codeformer_net.to(device)
         codeformer_net.eval()
 
+        # Process image with configurable fidelity
         face_helper.read_image(np.array(img))
         face_helper.get_face_landmarks_5(only_center_face=False, resize=640, eye_dist_threshold=5)
         face_helper.align_warp_face_tensor()
         face_helper.get_restored_face(codeformer_net, w=fidelity)
         face_helper.paste_faces_to_input_image()
+
         restored_img = face_helper.restored_img
         return Image.fromarray(restored_img)
+
     except Exception as e:
+        # Fallback to simple enhancement if CodeFormer fails
         print(f"Error en CodeFormer: {e}")
         return _fallback_enhancement(img, "CodeFormer")
 
-# ---------------------------
-# GFPGAN (on-demand)
-# ---------------------------
-def restaurar_imagen_gfpgan(img: Image.Image, upscale_factor: int = 2) -> Image.Image:
-    if not _load_gfpgan():
-        return _fallback_enhancement(img, "GFPGAN")
+
+def _fallback_enhancement(img: Image.Image, method: str) -> Image.Image:
+    """Fallback enhancement usando técnicas básicas de PIL"""
     try:
+        from PIL import ImageFilter
+        # Aplicar un filtro de suavizado para reducir ruido
+        filtered = img.filter(ImageFilter.GaussianBlur(radius=1))
+        return filtered
+    except Exception:
+        # Si todo falla, devolver la imagen original
+        return img
+
+# --- GFPGAN (original, may crop) ---
+def restaurar_imagen_gfpgan(img: Image.Image, upscale_factor: int = 2) -> Image.Image:
+    """Original GFPGAN - may crop faces"""
+    if not _load_gfpgan():
+        # Fallback a enhancement básico
+        return _fallback_enhancement(img, "GFPGAN")
+    
+    try:
+        # Try to load from Hugging Face Hub first
         try:
             from huggingface_hub import hf_hub_download
             model_path = hf_hub_download("microsoft/GFPGAN", "GFPGANv1.3.pth")
-        except Exception:
-            model_path = "GFPGANv1.3.pth"
+        except:
+            # Fallback to local file or download
+            model_path = 'GFPGANv1.3.pth'
             if not os.path.exists(model_path):
-                urllib.request.urlretrieve(
-                    "https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth",
-                    model_path
-                )
+                urllib.request.urlretrieve('https://github.com/TencentARC/GFPGAN/releases/download/v1.3.0/GFPGANv1.3.pth', model_path)
 
-        from gfpgan import GFPGANer  # type: ignore
+        from gfpgan import GFPGANer
         restorer = GFPGANer(model_path=model_path, upscale=upscale_factor, arch='clean', channel_multiplier=2, bg_upsampler=None)
         output, *_ = restorer.enhance(np.array(img), has_aligned=False, only_center_face=False, paste_back=True)
 
+        # Handle different output formats from GFPGAN
         if isinstance(output, list):
             output = output[0] if output else np.array(img)
+
+        # Ensure we have a numpy array
         if not isinstance(output, np.ndarray):
             output = np.array(img)
+
+        # Ensure output is in the correct format for PIL
         if output.dtype != np.uint8:
             output = (output * 255).astype(np.uint8) if output.max() <= 1.0 else output.astype(np.uint8)
+
         return Image.fromarray(output)
+
     except Exception as e:
+        # Fallback to simple enhancement
         print(f"Error en GFPGAN: {e}")
         return _fallback_enhancement(img, "GFPGAN")
 
-# ---------------------------
-# Real-ESRGAN (on-demand) - keep as before but no cv2 usage
-# ---------------------------
+# --- Real-ESRGAN ---
 def upscale_imagen_realesrgan(img: Image.Image, model_type: str = "x4plus") -> Image.Image:
     if not _load_real_esrgan():
+        # Fallback a resize simple
         return _fallback_upscale(img)
+    
     try:
-        from basicsr.archs.rrdbnet_arch import RRDBNet  # type: ignore
-        from realesrgan import RealESRGANer  # type: ignore
-
+        from basicsr.archs.rrdbnet_arch import RRDBNet
+        from realesrgan import RealESRGANer
+        
         if model_type == "x4plus":
+            # Try to load from Hugging Face Hub first
             try:
                 from huggingface_hub import hf_hub_download
                 model_path = hf_hub_download("microsoft/RealESRGAN", "RealESRGAN_x4plus.pth")
-            except Exception:
-                model_path = "RealESRGAN_x4plus.pth"
+            except:
+                # Fallback to local file or download
+                model_path = 'RealESRGAN_x4plus.pth'
                 if not os.path.exists(model_path):
-                    urllib.request.urlretrieve(
-                        "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth",
-                        model_path
-                    )
+                    urllib.request.urlretrieve('https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth', model_path)
         elif model_type == "x4plus-anime":
+            # Try to load from Hugging Face Hub first
             try:
                 from huggingface_hub import hf_hub_download
                 model_path = hf_hub_download("microsoft/RealESRGAN", "RealESRGAN_x4plus_anime_6B.pth")
-            except Exception:
-                model_path = "RealESRGAN_x4plus_anime.pth"
+            except:
+                # Fallback to local file or download
+                model_path = 'RealESRGAN_x4plus_anime.pth'
                 if not os.path.exists(model_path):
-                    urllib.request.urlretrieve(
-                        "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth",
-                        model_path
-                    )
+                    urllib.request.urlretrieve('https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.2.4/RealESRGAN_x4plus_anime_6B.pth', model_path)
         else:
+            # Fallback
             try:
                 from huggingface_hub import hf_hub_download
                 model_path = hf_hub_download("microsoft/RealESRGAN", "RealESRGAN_x4plus.pth")
-            except Exception:
-                model_path = "RealESRGAN_x4plus.pth"
+            except:
+                model_path = 'RealESRGAN_x4plus.pth'
 
         model = RRDBNet(num_in_ch=3, num_out_ch=3, num_feat=64, num_block=23, num_grow_ch=32, scale=4)
-        upsampler = RealESRGANer(scale=4, model_path=model_path, model=model, tile=0, tile_pad=10, pre_pad=0, half=False)
+        upsampler = RealESRGANer(
+            scale=4,
+            model_path=model_path,
+            model=model,
+            tile=0,
+            tile_pad=10,
+            pre_pad=0,
+            half=False
+        )
+
         output, _ = upsampler.enhance(np.array(img), outscale=4)
         return Image.fromarray(output)
+
     except Exception as e:
+        # Fallback to simple resize
         print(f"Error en Real-ESRGAN: {e}")
         return _fallback_upscale(img)
 
-# ---------------------------
-# Color / contrast (PIL + numpy fallback)
-# ---------------------------
+
+def _fallback_upscale(img: Image.Image) -> Image.Image:
+    """Fallback upscale usando PIL"""
+    width, height = img.size
+    new_size = (width * 2, height * 2)
+    return img.resize(new_size, Image.LANCZOS)
+
 def mejorar_color_contraste(img: Image.Image, intensity: float = 1.0) -> Image.Image:
+    """Mejora el color y contraste usando técnicas de procesamiento de imagen con intensidad configurable"""
     try:
-        # Implement a simple CLAHE-like enhancement using PIL + numpy approximation
-        arr = pil_to_np(img).astype(np.uint8)
-        # Convert RGB -> LAB approximation using skimage-like transform is heavy; use simple contrast + saturation adjustments
-        im = Image.fromarray(arr)
-        # Mild contrast via ImageEnhance
-        enhancer = ImageEnhance.Contrast(im)
-        im = enhancer.enhance(1.0 + (intensity - 1.0) * 0.2)
-        # Slight color boost
-        color_enhancer = ImageEnhance.Color(im)
-        im = color_enhancer.enhance(1.0 + (intensity - 1.0) * 0.15)
-        return im
+        import cv2
+        cv2.setUseOptimized(False)
+        cv2.ocl.setUseOpenCL(False)
+        import numpy as np
+
+        img_array = np.array(img)
+
+        # Convertir a espacio de color LAB para mejor manejo de brillo/contraste
+        lab = cv2.cvtColor(img_array, cv2.COLOR_RGB2LAB)
+
+        # Aplicar CLAHE con intensidad configurable
+        clip_limit = 2.0 + intensity * 2.0  # 2.0-4.0
+        clahe = cv2.createCLAHE(clipLimit=clip_limit, tileGridSize=(8,8))
+        lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+
+        # Convertir de vuelta a RGB
+        enhanced = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+        # Ajuste fino de saturación y brillo basado en intensidad
+        hsv = cv2.cvtColor(enhanced, cv2.COLOR_RGB2HSV)
+        saturation_boost = 1.0 + (intensity - 1.0) * 0.3  # 0.7-1.3
+        brightness_boost = 1.0 + (intensity - 1.0) * 0.1   # 0.9-1.1
+
+        hsv[:, :, 1] = cv2.multiply(hsv[:, :, 1], saturation_boost)
+        hsv[:, :, 2] = cv2.multiply(hsv[:, :, 2], brightness_boost)
+
+        result = cv2.cvtColor(hsv, cv2.COLOR_HSV2RGB)
+
+        return Image.fromarray(result)
+
     except Exception as e:
-        print(f"mejorar_color_contraste fallback: {e}")
+        # Fallback simple con PIL
         try:
-            return _fallback_enhancement(img, "color_contrast")
+            from PIL import ImageEnhance
+            # Ajuste básico de contraste y brillo
+            enhancer = ImageEnhance.Contrast(img)
+            adjusted = enhancer.enhance(1.0 + (intensity - 1.0) * 0.2)
+            brightness_enhancer = ImageEnhance.Brightness(adjusted)
+            adjusted = brightness_enhancer.enhance(1.0 + (intensity - 1.0) * 0.1)
+            return adjusted
         except:
             return img
 
-# ---------------------------
-# Denoise (PIL / numpy approach)
-# ---------------------------
 def reducir_ruido_avanzado(img: Image.Image, strength: int = 3) -> Image.Image:
+    """Reducción avanzada de ruido usando múltiples técnicas con intensidad configurable"""
     try:
-        arr = pil_to_np(img).astype(np.float32)
-        # Use repeated box blur as a denoise approximation; stronger strength -> more passes
-        passes = max(1, int(strength))
-        out = arr.copy()
-        for _ in range(passes):
-            out = _box_blur_numpy(out, k=3 + (passes-1))
-        return np_to_pil(out)
+        import cv2
+        cv2.setUseOptimized(False)
+        cv2.ocl.setUseOpenCL(False)
+        import numpy as np
+
+        img_array = np.array(img)
+
+        # Ajustar parámetros según la intensidad
+        base_diameter = 5 + strength * 2  # 7-15
+        base_sigma = 50 + strength * 10   # 80-150
+
+        # Aplicar denoising bilateral para preservar bordes
+        denoised = cv2.bilateralFilter(img_array, base_diameter, base_sigma, base_sigma)
+
+        if strength >= 3:
+            # Para intensidad alta, aplicar segunda pasada
+            denoised = cv2.bilateralFilter(denoised, base_diameter - 2, base_sigma - 20, base_sigma - 20)
+
+        if strength >= 4:
+            # Para intensidad muy alta, añadir blur gaussiano suave
+            gaussian = cv2.GaussianBlur(denoised, (3, 3), 0)
+            denoised = cv2.addWeighted(denoised, 0.8, gaussian, 0.2, 0)
+
+        return Image.fromarray(denoised)
+
     except Exception as e:
-        print(f"reducir_ruido_avanzado fallback: {e}")
+        # Fallback simple con PIL
         try:
-            return img.filter(ImageFilter.GaussianBlur(radius=0.5 * strength))
+            from PIL import ImageFilter
+            # Reducción simple de ruido con blur suave
+            denoised = img.filter(ImageFilter.GaussianBlur(radius=0.5))
+            return denoised
         except:
             return img
 
-# ---------------------------
-# Inpainting / eliminación de arañazos - versión sin OpenCV
-# ---------------------------
 def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Image.Image:
-    """
-    Implementación puramente PIL/NumPy para detectar rasguños y repararlos.
-    - Detección por gradiente (Sobel-like)
-    - Refinamiento de máscara con morfología numpy
-    - Inpainting ligero por difusión guiada (vecindario)
-    """
+    """Eliminación agresiva de arañazos, roturas y daños físicos usando inpainting múltiple"""
     try:
-        arr = pil_to_np(img).astype(np.uint8)
-        gray = (0.2989 * arr[..., 0] + 0.5870 * arr[..., 1] + 0.1140 * arr[..., 2]).astype(np.uint8)
+        import cv2
+        cv2.setUseOptimized(False)
+        cv2.ocl.setUseOpenCL(False)
+        import numpy as np
 
-        # Sobel-like gradients
-        kx = np.array([[1, 0, -1], [2, 0, -2], [1, 0, -1]], dtype=np.int32)
-        ky = kx.T
-        gx = _convolve2d(gray.astype(np.int32), kx)
-        gy = _convolve2d(gray.astype(np.int32), ky)
-        mag = np.abs(gx) + np.abs(gy)
+        img_array = np.array(img)
 
-        # Adaptive threshold
-        thresh_val = max(8, int(mag.mean() * (1.0 + (5 - sensitivity) * 0.05)))
-        mask = (mag > thresh_val).astype(np.uint8) * 255
+        # Estrategia múltiple para detectar diferentes tipos de daños
 
-        # Morphology: dilate then close using numpy kernels
-        mask = _numpy_dilate(mask, kernel_size=3, iterations=1)
-        mask = _numpy_close(mask, kernel_size=5)
+        # Estrategia 1: Detección de líneas/arañazos (bordes irregulares)
+        gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+        edges = cv2.Canny(gray, 50, 150)
+        kernel_line = np.ones((1, 5), np.uint8)  # Kernel horizontal para líneas
+        dilated_lines = cv2.dilate(edges, kernel_line, iterations=1)
 
-        if mask.mean() < 1.0:
-            # nothing detected; fallback to denoise
-            return reducir_ruido_avanzado(img, strength=max(1, sensitivity//2))
+        # Estrategia 2: Detección de áreas irregulares (roturas)
+        thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
+        kernel_irregular = np.ones((5, 5), np.uint8)
+        irregular_areas = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel_irregular)
 
-        # Inpainting by iterative guided diffusion: replace masked pixels with neighborhood mean (RGB)
-        result = arr.copy().astype(np.float32)
-        mask_bool = mask > 0
-        for _ in range(6):
-            neigh = _box_blur_numpy(result, k=5)
-            # only replace pixels where mask True
-            for c in range(3):
-                channel = result[..., c]
-                channel[mask_bool] = neigh[..., c][mask_bool]
-                result[..., c] = channel
-            # optional: shrink mask gradually (feather)
-            mask = _numpy_erode(mask, kernel_size=3, iterations=1)
-            mask_bool = mask > 0
-            if not mask_bool.any():
-                break
+        # Estrategia 3: Detección de variaciones de intensidad (posibles daños)
+        blur = cv2.GaussianBlur(gray, (3, 3), 0)
+        laplacian = cv2.Laplacian(blur, cv2.CV_64F)
+        damage_candidates = cv2.convertScaleAbs(laplacian)
+        _, damage_mask = cv2.threshold(damage_candidates, 30, 255, cv2.THRESH_BINARY)
 
-        # Slight sharpening
-        blurred = _box_blur_numpy(result, k=3)
-        final = np.clip(result * 1.1 - blurred * 0.1, 0, 255).astype(np.uint8)
-        return np_to_pil(final)
+        # Combinar todas las estrategias
+        combined_mask = cv2.bitwise_or(dilated_lines, irregular_areas)
+        combined_mask = cv2.bitwise_or(combined_mask, damage_mask)
+
+        # Operaciones morfológicas agresivas
+        kernel_final = np.ones((5, 5), np.uint8)
+        combined_mask = cv2.morphologyEx(combined_mask, cv2.MORPH_CLOSE, kernel_final)
+        combined_mask = cv2.morphologyEx(combined_mask, cv2.MORPH_OPEN, kernel_final)
+
+        # Encontrar contornos y filtrar
+        contours, _ = cv2.findContours(combined_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Crear máscara refinada con criterios más agresivos
+        refined_mask = np.zeros_like(combined_mask)
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            perimeter = cv2.arcLength(contour, True)
+            if perimeter > 0:
+                # Calcular elongación (para detectar líneas/arañazos)
+                rect = cv2.minAreaRect(contour)
+                width, height = rect[1]
+                if width > 0 and height > 0:
+                    elongation = max(width, height) / min(width, height)
+                else:
+                    elongation = 1
+
+            # Criterios más agresivos para daños físicos
+            if area > 20 and (elongation > 3 or area < 1000):  # Líneas largas o áreas pequeñas irregulares
+                cv2.drawContours(refined_mask, [contour], -1, 255, thickness=cv2.FILLED)
+
+        # Aplicar inpainting múltiple
+        if np.any(refined_mask > 0):
+            # Primer inpainting con radio grande para reconstrucción
+            inpainted = cv2.inpaint(img_array, refined_mask, inpaintRadius=9, flags=cv2.INPAINT_NS)
+
+            # Segundo inpainting para refinar
+            inpainted = cv2.inpaint(inpainted, refined_mask, inpaintRadius=5, flags=cv2.INPAINT_TELEA)
+
+            return Image.fromarray(inpainted)
+        else:
+            return reducir_ruido_avanzado(img)
+
     except Exception as e:
-        print(f"inpainting_aranasos_agresivo fallback error: {e}")
-        return _fallback_enhancement(img, "inpainting")
-
-# ---------------------------
-# Definir bordes (PIL)
-# ---------------------------
-def definir_bordes_foto(img: Image.Image) -> Image.Image:
-    try:
-        arr = pil_to_np(img).astype(np.uint8)
-        gray = (0.2989 * arr[..., 0] + 0.5870 * arr[..., 1] + 0.1140 * arr[..., 2]).astype(np.uint8)
-        gx = _convolve2d(gray.astype(np.int32), np.array([[1,0,-1],[2,0,-2],[1,0,-1]]))
-        gy = _convolve2d(gray.astype(np.int32), np.array([[1,2,1],[0,0,0],[-1,-2,-1]]))
-        mag = np.sqrt(gx.astype(np.float32)**2 + gy.astype(np.float32)**2)
-        edges = (mag > (mag.mean()*1.2)).astype(np.uint8) * 255
-        # Create soft frame by dilating and blurring the edges
-        frame = _numpy_dilate(edges, kernel_size=3, iterations=2)
-        frame_blur = _box_blur_numpy(np.dstack([frame]*3).astype(np.float32), k=7)
-        result = arr.copy().astype(np.float32)
-        mask = frame_blur[...,0] > 10
-        result[mask] = np.clip(result[mask] * 1.08 + 10, 0, 255)
-        return np_to_pil(result.astype(np.uint8))
-    except Exception as e:
-        print(f"definir_bordes_foto fallback: {e}")
-        return img
-
-# ---------------------------
-# CLAHE-like (approx)
-# ---------------------------
-def mejorar_contraste_adaptativo(img: Image.Image) -> Image.Image:
-    try:
-        # PIL-based approximation: equalize per channel modestly
-        arr = pil_to_np(img).astype(np.uint8)
-        out = np.zeros_like(arr)
-        for c in range(3):
-            ch = arr[..., c]
-            # clip extremes
-            p1, p99 = np.percentile(ch, (1, 99))
-            ch = np.clip((ch - p1) * 255.0 / max(1, (p99 - p1)), 0, 255).astype(np.uint8)
-            # mild local equalization via tiny box blur subtraction
-            local = _box_blur_numpy(ch.astype(np.float32), k=9)
-            ch2 = np.clip(ch * 1.05 + (ch - local) * 0.3, 0, 255)
-            out[..., c] = ch2
-        return np_to_pil(out.astype(np.uint8))
-    except Exception as e:
-        print(f"mejorar_contraste_adaptativo fallback: {e}")
-        return img
-
-# ---------------------------
-# Afilar detalles (unsharp) - PIL
-# ---------------------------
-def afinar_detalles(img: Image.Image) -> Image.Image:
-    try:
-        return img.filter(ImageFilter.UnsharpMask(radius=1, percent=120, threshold=3))
-    except Exception as e:
-        print(f"afinar_detalles fallback: {e}")
-        return img
-
-# ---------------------------
-# Colorización (approx)
-# ---------------------------
-def colorizar_imagen(img: Image.Image) -> Image.Image:
-    try:
-        arr = pil_to_np(img).astype(np.uint8)
-        hsv_mean = np.mean(_rgb_to_hsv(arr)[...,1])
-        if hsv_mean > 20:
-            return img
-        # Simple tinting by luminosity bands
-        l = (0.2989 * arr[...,0] + 0.5870 * arr[...,1] + 0.1140 * arr[...,2]).astype(np.uint8)
-        out = arr.copy().astype(np.float32)
-        # apply simple tone mapping per band (heuristic)
-        dark = l < 60
-        mid = (l >= 60) & (l < 170)
-        bright = l >= 170
-        out[dark] *= np.array([0.85, 0.9, 1.05])
-        out[mid] *= np.array([1.02, 0.95, 0.9])
-        out[bright] *= np.array([1.05, 1.02, 0.98])
-        out = np.clip(out, 0, 255).astype(np.uint8)
-        return np_to_pil(out)
-    except Exception as e:
-        print(f"colorizar_imagen fallback: {e}")
-        return img
-
-# ---------------------------
-# Reparar manchas blancas
-# ---------------------------
-def reparar_manchas_blancas(img: Image.Image, sensitivity: int = 5) -> Image.Image:
-    try:
-        arr = pil_to_np(img).astype(np.uint8)
-        gray = (0.2989 * arr[...,0] + 0.5870 * arr[...,1] + 0.1140 * arr[...,2]).astype(np.uint8)
-        white_mask = (gray > 245).astype(np.uint8) * 255
-        # HSV-based detection approximation
-        hsv = _rgb_to_hsv(arr)
-        white_mask_hsv = ((hsv[...,1] < 30) & (hsv[...,2] > 220)).astype(np.uint8) * 255
-        combined = np.clip(white_mask + white_mask_hsv, 0, 255).astype(np.uint8)
-        combined = _numpy_close(combined, kernel_size=7)
-        # find regions and inpaint them with diffusion
-        if combined.mean() < 1.0:
-            return img
-        mask = combined
-        result = arr.copy().astype(np.float32)
-        for _ in range(5):
-            neigh = _box_blur_numpy(result, k=7)
-            for c in range(3):
-                channel = result[...,c]
-                channel[mask>0] = neigh[...,c][mask>0]
-                result[...,c] = channel
-            mask = _numpy_erode(mask, kernel_size=3, iterations=1)
-            if mask.sum() == 0:
-                break
-        return np_to_pil(np.clip(result,0,255).astype(np.uint8))
-    except Exception as e:
-        print(f"reparar_manchas_blancas fallback: {e}")
+        # Fallback agresivo con PIL
         try:
-            return ImageOps.equalize(img)
+            from PIL import ImageFilter
+            # Múltiples pasadas de suavizado y sharpening
+            result = img.filter(ImageFilter.GaussianBlur(radius=2))
+            result = result.filter(ImageFilter.UnsharpMask(radius=1, percent=200, threshold=2))
+            return result
         except:
             return img
 
-# ---------------------------
-# Stable Diffusion (on-demand)
-# ---------------------------
+def definir_bordes_foto(img: Image.Image) -> Image.Image:
+    """Definir y mejorar los bordes de la fotografía para un aspecto más profesional"""
+    try:
+        import cv2
+        cv2.setUseOptimized(False)
+        import numpy as np
+
+        img_array = np.array(img)
+
+        # Convertir a escala de grises
+        gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+
+        # Detectar bordes con Canny
+        edges = cv2.Canny(gray, 100, 200)
+
+        # Dilatar bordes para crear un marco sutil
+        kernel = np.ones((2, 2), np.uint8)
+        edge_frame = cv2.dilate(edges, kernel, iterations=1)
+
+        # Crear una máscara para el área interior (ligeramente más pequeña)
+        height, width = gray.shape
+        mask = np.zeros_like(gray)
+        cv2.rectangle(mask, (5, 5), (width-5, height-5), 255, -1)
+
+        # Aplicar un ligero desenfoque a los bordes para suavizar
+        blurred_edges = cv2.GaussianBlur(edge_frame, (3, 3), 0)
+
+        # Combinar con la imagen original usando máscara
+        result = img_array.copy()
+        # Aplicar un ligero ajuste de contraste en los bordes
+        result[blurred_edges > 0] = cv2.addWeighted(
+            result[blurred_edges > 0], 1.1,
+            np.full_like(result[blurred_edges > 0], 128), 0, 0
+        )
+
+        return Image.fromarray(result)
+
+    except Exception as e:
+        return img
+
+def mejorar_contraste_adaptativo(img: Image.Image) -> Image.Image:
+    """Mejora el contraste usando CLAHE (Contrast Limited Adaptive Histogram Equalization)"""
+    try:
+        import cv2
+        cv2.setUseOptimized(False)
+        import numpy as np
+
+        img_array = np.array(img)
+
+        # Convertir a LAB para mejor manejo de luminosidad
+        lab = cv2.cvtColor(img_array, cv2.COLOR_RGB2LAB)
+
+        # Aplicar CLAHE al canal L (luminosidad)
+        clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8,8))
+        lab[:, :, 0] = clahe.apply(lab[:, :, 0])
+
+        # Convertir de vuelta a RGB
+        enhanced = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+        return Image.fromarray(enhanced)
+
+    except Exception as e:
+        return img
+
+def afinar_detalles(img: Image.Image) -> Image.Image:
+    """Afina detalles usando un filtro de paso alto sutil"""
+    try:
+        import cv2
+        cv2.setUseOptimized(False)
+        import numpy as np
+
+        img_array = np.array(img)
+
+        # Aplicar un ligero blur gaussiano
+        gaussian = cv2.GaussianBlur(img_array, (0, 0), 1.0)
+
+        # Crear máscara de detalles (imagen original - blur)
+        unsharp_mask = cv2.addWeighted(img_array, 1.5, gaussian, -0.5, 0)
+
+        # Combinar con la imagen original para afinar detalles
+        sharpened = cv2.addWeighted(img_array, 1.0, unsharp_mask, 0.3, 0)
+
+        return Image.fromarray(np.clip(sharpened, 0, 255).astype(np.uint8))
+
+    except Exception as e:
+        return img
+
+def colorizar_imagen(img: Image.Image) -> Image.Image:
+    """Colorización mejorada usando mapeo de color basado en referencias de piel y tonos"""
+    try:
+        import cv2
+        cv2.setUseOptimized(False)
+        import numpy as np
+
+        img_array = np.array(img)
+
+        # Detectar si la imagen ya tiene algo de color (evitar sobreprocesar)
+        hsv = cv2.cvtColor(img_array, cv2.COLOR_RGB2HSV)
+        saturation_mean = np.mean(hsv[:, :, 1])
+
+        # Si ya tiene saturación significativa, no colorizar
+        if saturation_mean > 20:
+            return img
+
+        # Convertir a LAB para mejor control de color
+        lab = cv2.cvtColor(img_array, cv2.COLOR_RGB2LAB)
+        l_channel = lab[:, :, 0]
+
+        # Estrategia mejorada de colorización
+        a_channel = np.zeros_like(l_channel, dtype=np.uint8)
+        b_channel = np.zeros_like(l_channel, dtype=np.uint8)
+
+        # Rangos más sofisticados basados en teoría del color
+        # Sombras profundas (negro azulado)
+        dark_mask = l_channel < 40
+        a_channel[dark_mask] = 135  # Azul profundo
+        b_channel[dark_mask] = 135
+
+        # Sombras (gris azulado)
+        shadow_mask = (l_channel >= 40) & (l_channel < 80)
+        a_channel[shadow_mask] = 130
+        b_channel[shadow_mask] = 140
+
+        # Tonos medios (piel/tejidos)
+        mid_mask = (l_channel >= 80) & (l_channel < 150)
+        a_channel[mid_mask] = 145  # Tonos piel naturales
+        b_channel[mid_mask] = 125
+
+        # Altas luces (blancos cálidos)
+        light_mask = (l_channel >= 150) & (l_channel < 200)
+        a_channel[light_mask] = 150
+        b_channel[light_mask] = 115
+
+        # Picos de luz (blancos puros)
+        bright_mask = l_channel >= 200
+        a_channel[bright_mask] = 155
+        b_channel[bright_mask] = 110
+
+        # Aplicar canales de color
+        lab[:, :, 1] = a_channel
+        lab[:, :, 2] = b_channel
+
+        # Convertir de vuelta a RGB
+        colorized = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
+
+        # Aplicar un ligero ajuste de saturación para naturalidad
+        hsv_colorized = cv2.cvtColor(colorized, cv2.COLOR_RGB2HSV)
+        hsv_colorized[:, :, 1] = cv2.multiply(hsv_colorized[:, :, 1], 0.8)  # Reducir saturación ligeramente
+        final_result = cv2.cvtColor(hsv_colorized, cv2.COLOR_HSV2RGB)
+
+        return Image.fromarray(final_result)
+
+    except Exception as e:
+        return img
+
+def reparar_manchas_blancas(img: Image.Image, sensitivity: int = 5) -> Image.Image:
+    """Reparación especializada de manchas blancas, agujeros y marcas en rostros"""
+    try:
+        import cv2
+        cv2.setUseOptimized(False)
+        import numpy as np
+
+        img_array = np.array(img)
+
+        # Múltiples estrategias de detección para diferentes tipos de daños
+
+        # Estrategia 1: Detección de áreas blancas puras (agujeros/roturas)
+        gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
+        _, white_mask = cv2.threshold(gray, 240, 255, cv2.THRESH_BINARY)
+
+        # Estrategia 2: Detección de áreas sobreexpuestas (manchas blancas)
+        hsv = cv2.cvtColor(img_array, cv2.COLOR_RGB2HSV)
+        lower_white = np.array([0, 0, 220])  # Más restrictivo
+        upper_white = np.array([180, 40, 255])
+        white_mask_hsv = cv2.inRange(hsv, lower_white, upper_white)
+
+        # Combinar máscaras
+        combined_mask = cv2.bitwise_or(white_mask, white_mask_hsv)
+
+        # Estrategia 3: Detección de áreas con poco detalle (posibles agujeros)
+        # Calcular varianza local - áreas uniformes pueden ser daños
+        blur = cv2.GaussianBlur(gray, (5, 5), 0)
+        variance = cv2.Laplacian(blur, cv2.CV_64F).var()
+        low_detail_mask = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+
+        # Combinar con áreas de bajo detalle
+        final_mask = cv2.bitwise_or(combined_mask, low_detail_mask)
+
+        # Operaciones morfológicas agresivas para conectar áreas dañadas
+        kernel = np.ones((7, 7), np.uint8)
+        final_mask = cv2.morphologyEx(final_mask, cv2.MORPH_CLOSE, kernel)
+        final_mask = cv2.morphologyEx(final_mask, cv2.MORPH_OPEN, kernel)
+
+        # Encontrar contornos y filtrar
+        contours, _ = cv2.findContours(final_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+        # Crear máscara refinada
+        refined_mask = np.zeros_like(final_mask)
+        for contour in contours:
+            area = cv2.contourArea(contour)
+            perimeter = cv2.arcLength(contour, True)
+            if perimeter > 0:
+                circularity = 4 * np.pi * area / (perimeter * perimeter)
+            else:
+                circularity = 0
+
+            # Filtrar por área y forma (manchas/roturas típicas)
+            if 50 < area < 5000 and circularity < 0.8:  # No perfectamente circulares
+                cv2.drawContours(refined_mask, [contour], -1, 255, thickness=cv2.FILLED)
+
+        # Aplicar inpainting múltiple para mejor reconstrucción
+        if np.any(refined_mask > 0):
+            # Primer paso: inpainting NS para texturas complejas
+            repaired = cv2.inpaint(img_array, refined_mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
+
+            # Segundo paso: inpainting Telea para refinar
+            repaired = cv2.inpaint(repaired, refined_mask, inpaintRadius=3, flags=cv2.INPAINT_TELEA)
+
+            return Image.fromarray(repaired)
+        else:
+            return img
+
+    except Exception as e:
+        # Fallback múltiple
+        try:
+            # Fallback 1: Ecualización agresiva con PIL
+            from PIL import ImageOps
+            # Ecualización de histograma para mejorar contraste
+            result = ImageOps.equalize(img)
+            return result
+        except:
+            # Fallback 2: solo devolver original
+            return img
+
+# --- Stable Diffusion + ControlNet ---
 CONTROLNET_MODEL = "lllyasviel/sd-controlnet-canny"
 
 def restaurar_imagen_sd(img: Image.Image, hf_token: str, prompt: str = "restaurar imagen antigua dañada, reparar rasguños y arrugas, mejorar nitidez, colores naturales, imagen antigua restaurada profesionalmente", strength: float = 0.6, steps: int = 15) -> Image.Image:
+    # Try to use Stable Diffusion + ControlNet as per requirements
     if not hf_token:
         raise ValueError("HF_TOKEN is required for Stable Diffusion")
-    if not _load_stable_diffusion():
-        return _fallback_enhancement(img, "stable_diffusion")
+
+    torch_dtype = torch.float16 if device == "cuda" else torch.float32
     try:
-        from diffusers import StableDiffusionImg2ImgPipeline, ControlNetModel  # type: ignore
-        import torch
-        controlnet = ControlNetModel.from_pretrained(CONTROLNET_MODEL, torch_dtype=torch.float16 if device=="cuda" else torch.float32, token=hf_token)
+        # Load ControlNet model
+        controlnet = ControlNetModel.from_pretrained(
+            "lllyasviel/sd-controlnet-canny",
+            torch_dtype=torch_dtype,
+            token=hf_token
+        )
+
+        # Load Stable Diffusion pipeline
         pipe = StableDiffusionImg2ImgPipeline.from_pretrained(
             "runwayml/stable-diffusion-v1-5",
             controlnet=controlnet,
-            torch_dtype=torch.float16 if device=="cuda" else torch.float32,
+            torch_dtype=torch_dtype,
             token=hf_token
         )
         pipe.to(device)
-        # prepare a simple edge map using numpy (approx)
-        arr = pil_to_np(img)
-        gray = (0.2989 * arr[...,0] + 0.5870 * arr[...,1] + 0.1140 * arr[...,2]).astype(np.uint8)
-        edges = (_convolve2d(gray.astype(np.int32), np.array([[1,1,1],[1,-8,1],[1,1,1]])) > 20).astype(np.uint8) * 255
-        control_img = Image.fromarray(edges)
+
+        # Prepare canny edge detection for ControlNet
+        import cv2
+        cv2.setUseOptimized(False)
+        canny_image = cv2.Canny(np.array(img), 100, 200)
+        canny_image = Image.fromarray(canny_image)
+
+        # Generate enhanced image with configurable parameters
         result = pipe(
             prompt=prompt,
             image=img,
-            control_image=control_img,
-            strength=strength,
-            guidance_scale=7.5,
-            num_inference_steps=steps
+            control_image=canny_image,
+            strength=strength,  # Configurable strength
+            guidance_scale=7.5,  # Balanced guidance
+            num_inference_steps=steps  # Configurable steps
         ).images[0]
+
         return result
+
     except Exception as e:
-        print(f"restaurar_imagen_sd fallo: {e}")
-        return _fallback_enhancement(img, "stable_diffusion")
-
-# ---------------------------
-# Public API alias (keep name expected by app.py)
-# ---------------------------
-# inpainting_aranasos_agresivo is expected by your app; provide alias
-# We'll use the pure-PIL inpainting implementation above.
-inpainting_aranasos_agresivo = inpainting_aranasos_agresivo
-
-# ---------------------------
-# --- Helper small image ops (NumPy implementations)
-# ---------------------------
-def _convolve2d(img, kernel):
-    """2D convolution for single-channel image using valid padding -> same output size"""
-    k_h, k_w = kernel.shape
-    pad_h = k_h // 2
-    pad_w = k_w // 2
-    padded = np.pad(img, ((pad_h, pad_h), (pad_w, pad_w)), mode='reflect')
-    out = np.zeros_like(img, dtype=np.int32)
-    for y in range(img.shape[0]):
-        for x in range(img.shape[1]):
-            region = padded[y:y+k_h, x:x+k_w]
-            out[y, x] = int((region * kernel).sum())
-    return out
-
-def _box_blur_numpy(img, k=3):
-    """Simple box blur for uint8 RGB or float arrays."""
-    if img.ndim == 2:
-        arr = img
-        pad = k//2
-        padded = np.pad(arr, ((pad,pad),(pad,pad)), mode='reflect')
-        out = np.zeros_like(arr, dtype=np.float32)
-        for y in range(arr.shape[0]):
-            for x in range(arr.shape[1]):
-                out[y,x] = padded[y:y+k, x:x+k].mean()
-        return out
-    else:
-        arr = img
-        pad = k//2
-        padded = np.pad(arr, ((pad,pad),(pad,pad),(0,0)), mode='reflect')
-        out = np.zeros_like(arr, dtype=np.float32)
-        for y in range(arr.shape[0]):
-            for x in range(arr.shape[1]):
-                out[y,x] = padded[y:y+k, x:x+k].mean(axis=(0,1))
-        return out
-
-def _numpy_dilate(mask, kernel_size=3, iterations=1):
-    """Simple dilate for 2D uint8 masks"""
-    out = mask.copy()
-    for _ in range(iterations):
-        pad = kernel_size // 2
-        padded = np.pad(out, pad, mode='constant', constant_values=0)
-        new = out.copy()
-        for y in range(out.shape[0]):
-            for x in range(out.shape[1]):
-                region = padded[y:y+kernel_size, x:x+kernel_size]
-                if np.any(region):
-                    new[y,x] = 255
-        out = new
-    return out
-
-def _numpy_erode(mask, kernel_size=3, iterations=1):
-    out = mask.copy()
-    for _ in range(iterations):
-        pad = kernel_size // 2
-        padded = np.pad(out, pad, mode='constant', constant_values=0)
-        new = out.copy()
-        for y in range(out.shape[0]):
-            for x in range(out.shape[1]):
-                region = padded[y:y+kernel_size, x:x+kernel_size]
-                if np.all(region):
-                    new[y,x] = 255
-                else:
-                    new[y,x] = 0
-        out = new
-    return out
-
-def _numpy_close(mask, kernel_size=3):
-    return _numpy_erode(_numpy_dilate(mask, kernel_size=kernel_size, iterations=1), kernel_size=kernel_size, iterations=1)
-
-def _rgb_to_hsv(arr):
-    """arr uint8 RGB -> float HSV in range H:0-360, S:0-255, V:0-255 (approx)"""
-    arr_f = arr.astype(np.float32) / 255.0
-    r = arr_f[...,0]; g = arr_f[...,1]; b = arr_f[...,2]
-    mx = np.maximum.reduce([r,g,b])
-    mn = np.minimum.reduce([r,g,b])
-    diff = mx - mn + 1e-9
-    h = np.zeros_like(mx)
-    mask = mx == r
-    h[mask] = (60 * ((g[mask] - b[mask]) / diff[mask]) + 360) % 360
-    mask = mx == g
-    h[mask] = (60 * ((b[mask] - r[mask]) / diff[mask]) + 120) % 360
-    mask = mx == b
-    h[mask] = (60 * ((r[mask] - g[mask]) / diff[mask]) + 240) % 360
-    s = diff / (mx + 1e-9)
-    v = mx
-    hsv = np.stack([h, s*255.0, v*255.0], axis=-1)
-    return hsv
-
-# ---------------------------
-# End of module
-# ---------------------------
-
-
+        # Fallback to simple enhancement if SD fails
+        try:
+            from PIL import ImageFilter
+            # Apply gentle sharpening and denoising with PIL
+            sharpened = img.filter(ImageFilter.UnsharpMask(radius=1, percent=150, threshold=3))
+            denoised = sharpened.filter(ImageFilter.GaussianBlur(radius=0.5))
+            return denoised
+        except:
+            return img
