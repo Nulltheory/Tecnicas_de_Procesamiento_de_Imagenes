@@ -15,14 +15,6 @@ os.environ['DISPLAY'] = ''
 os.environ['SDL_VIDEODRIVER'] = 'dummy'
 os.environ['OPENCV_HEADLESS'] = '1'
 
-# Importar OpenCV después de configurar variables de entorno
-try:
-    import cv2
-    cv2_available = True
-except ImportError as e:
-    cv2_available = False
-    print(f"Error importing OpenCV: {e}")
-
 # --- Configuración Streamlit (PRIMERO) ---
 st.set_page_config(page_title="Restaurador Fotográfico AI 🧠🎨",
                    page_icon="🧠",
