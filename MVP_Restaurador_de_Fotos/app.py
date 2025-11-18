@@ -6,11 +6,6 @@ import numpy as np
 import warnings
 # Eliminamos subprocess y sys ya que la instalación dinámica está fuera.
 
-import cv2
-import numpy as np
-st.write("OpenCV:", cv2.__version__)
-st.write("NumPy:", np.__version__)
-
 # Configuración para OpenCV en entorno headless (Streamlit Cloud)
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '0'
@@ -19,6 +14,14 @@ os.environ['OPENCV_IO_MAX_IMAGE_PIXELS'] = '0'
 os.environ['DISPLAY'] = ''
 os.environ['SDL_VIDEODRIVER'] = 'dummy'
 os.environ['OPENCV_HEADLESS'] = '1'
+
+# Importar OpenCV después de configurar variables de entorno
+try:
+    import cv2
+    cv2_available = True
+except ImportError as e:
+    cv2_available = False
+    print(f"Error importing OpenCV: {e}")
 
 # --- Configuración Streamlit (PRIMERO) ---
 st.set_page_config(page_title="Restaurador Fotográfico AI 🧠🎨",
@@ -769,6 +772,3 @@ if imagen_cargada:
                 mime="image/png",
                 use_container_width=True
             )
-
-
-
