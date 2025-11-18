@@ -496,29 +496,26 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
             if area > min_area and (elongation > min_elongation or area < max_area):
                 cv2.drawContours(refined_mask, [contour], -1, 255, thickness=cv2.FILLED)
 
-        # Aplicar inpainting usando el mejor modelo disponible (cv2.inpaint es el más avanzado)
+        # TEMPORAL: Deshabilitar fallbacks para ver error exacto de cv2.inpaint
         if np.any(refined_mask > 0):
-            # Intentar cv2.inpaint primero (método más avanzado disponible)
+            print(f"DEBUG: Máscara detectada con {np.sum(refined_mask > 0)} píxeles")  # Debug
             try:
+                print("DEBUG: Intentando cv2.inpaint NS...")  # Debug
                 inpainted = cv2.inpaint(img_array, refined_mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
+                print("DEBUG: cv2.inpaint NS completado")  # Debug
+                print("DEBUG: Intentando cv2.inpaint Telea...")  # Debug
                 inpainted = cv2.inpaint(inpainted, refined_mask, inpaintRadius=4, flags=cv2.INPAINT_TELEA)
+                print("DEBUG: cv2.inpaint Telea completado")  # Debug
                 return Image.fromarray(inpainted)
             except Exception as e:
-                if "libGL.so.1" in str(e):
-                    # Problema con OpenGL en entorno headless - usar método alternativo avanzado
-                    try:
-                        inpainted = _simple_inpaint(img_array, refined_mask)
-                        return Image.fromarray(inpainted)
-                    except Exception:
-                        return reducir_ruido_avanzado(img)
-                else:
-                    # Otro error con cv2 - fallback
-                    try:
-                        inpainted = _simple_inpaint(img_array, refined_mask)
-                        return Image.fromarray(inpainted)
-                    except Exception:
-                        return reducir_ruido_avanzado(img)
+                # Mostrar error completo para debugging
+                import traceback
+                error_msg = f"Error en cv2.inpaint: {str(e)}\n{traceback.format_exc()}"
+                print(error_msg)  # Para logs
+                # Re-raise para que se propague
+                raise Exception(error_msg)
         else:
+            print("DEBUG: No se detectó máscara de daños")  # Debug
             return reducir_ruido_avanzado(img)
 
     except Exception as e:
