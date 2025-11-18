@@ -6,6 +6,10 @@ import numpy as np
 import warnings
 # Eliminamos subprocess y sys ya que la instalación dinámica está fuera.
 
+# Configuración para OpenCV en entorno headless (Streamlit Cloud)
+os.environ['QT_QPA_PLATFORM'] = 'offscreen'
+os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '0'
+
 # --- Configuración Streamlit (PRIMERO) ---
 st.set_page_config(page_title="Restaurador Fotográfico AI 🧠🎨",
                    page_icon="🧠",
