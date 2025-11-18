@@ -494,28 +494,11 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
             if area > min_area and (elongation > min_elongation or area < max_area):
                 cv2.drawContours(refined_mask, [contour], -1, 255, thickness=cv2.FILLED)
 
-        # Aplicar inpainting usando el mejor modelo disponible (cv2.inpaint es el más avanzado)
+        # Aplicar inpainting óptimo con cv2.inpaint (método más avanzado disponible)
         if np.any(refined_mask > 0):
-            # Intentar cv2.inpaint primero (método más avanzado disponible)
-            try:
-                inpainted = cv2.inpaint(img_array, refined_mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
-                inpainted = cv2.inpaint(inpainted, refined_mask, inpaintRadius=4, flags=cv2.INPAINT_TELEA)
-                return Image.fromarray(inpainted)
-            except Exception as e:
-                if "libGL.so.1" in str(e):
-                    # Problema con OpenGL en entorno headless - usar método alternativo avanzado
-                    try:
-                        inpainted = _simple_inpaint(img_array, refined_mask)
-                        return Image.fromarray(inpainted)
-                    except Exception:
-                        return reducir_ruido_avanzado(img)
-                else:
-                    # Otro error con cv2 - fallback
-                    try:
-                        inpainted = _simple_inpaint(img_array, refined_mask)
-                        return Image.fromarray(inpainted)
-                    except Exception:
-                        return reducir_ruido_avanzado(img)
+            inpainted = cv2.inpaint(img_array, refined_mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
+            inpainted = cv2.inpaint(inpainted, refined_mask, inpaintRadius=4, flags=cv2.INPAINT_TELEA)
+            return Image.fromarray(inpainted)
         else:
             return reducir_ruido_avanzado(img)
 
@@ -740,31 +723,11 @@ def reparar_manchas_blancas(img: Image.Image, sensitivity: int = 5) -> Image.Ima
             if 50 < area < 5000 and circularity < 0.8:  # No perfectamente circulares
                 cv2.drawContours(refined_mask, [contour], -1, 255, thickness=cv2.FILLED)
 
-        # Aplicar inpainting múltiple para mejor reconstrucción
+        # Aplicar inpainting óptimo con cv2.inpaint
         if np.any(refined_mask > 0):
-            try:
-                # Primer paso: inpainting NS para texturas complejas
-                repaired = cv2.inpaint(img_array, refined_mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
-
-                # Segundo paso: inpainting Telea para refinar
-                repaired = cv2.inpaint(repaired, refined_mask, inpaintRadius=3, flags=cv2.INPAINT_TELEA)
-
-                return Image.fromarray(repaired)
-            except Exception as e:
-                if "libGL.so.1" in str(e):
-                    # Fallback a método personalizado en entorno headless
-                    try:
-                        repaired = _simple_inpaint(img_array, refined_mask)
-                        return Image.fromarray(repaired)
-                    except Exception:
-                        return img
-                else:
-                    # Otro error - intentar fallback
-                    try:
-                        repaired = _simple_inpaint(img_array, refined_mask)
-                        return Image.fromarray(repaired)
-                    except Exception:
-                        return img
+            repaired = cv2.inpaint(img_array, refined_mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
+            repaired = cv2.inpaint(repaired, refined_mask, inpaintRadius=3, flags=cv2.INPAINT_TELEA)
+            return Image.fromarray(repaired)
         else:
             return img
 
