@@ -1,6 +1,6 @@
 # --- Streamlit y utilidades ---
 streamlit==1.40.1
-numpy<2
+numpy==1.26.4
 Pillow
 tqdm
 
@@ -10,8 +10,8 @@ torch==2.2.2+cpu
 torchvision==0.17.2+cpu
 torchaudio==2.2.2+cpu
 
-# --- Dependencias del sistema ---
-opencv-python-headless==4.11.0.86
+# --- OpenCV (obligatorio para restauración estructural) ---
+opencv-python==4.9.0.80
 
 # --- Bibliotecas de IA / Restauración facial ---
 basicsr==1.4.2
