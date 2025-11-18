@@ -733,13 +733,29 @@ def reparar_manchas_blancas(img: Image.Image, sensitivity: int = 5) -> Image.Ima
 
         # Aplicar inpainting múltiple para mejor reconstrucción
         if np.any(refined_mask > 0):
-            # Primer paso: inpainting NS para texturas complejas
-            repaired = cv2.inpaint(img_array, refined_mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
+            try:
+                # Primer paso: inpainting NS para texturas complejas
+                repaired = cv2.inpaint(img_array, refined_mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
 
-            # Segundo paso: inpainting Telea para refinar
-            repaired = cv2.inpaint(repaired, refined_mask, inpaintRadius=3, flags=cv2.INPAINT_TELEA)
+                # Segundo paso: inpainting Telea para refinar
+                repaired = cv2.inpaint(repaired, refined_mask, inpaintRadius=3, flags=cv2.INPAINT_TELEA)
 
-            return Image.fromarray(repaired)
+                return Image.fromarray(repaired)
+            except Exception as e:
+                if "libGL.so.1" in str(e):
+                    # Fallback a método personalizado en entorno headless
+                    try:
+                        repaired = _simple_inpaint(img_array, refined_mask)
+                        return Image.fromarray(repaired)
+                    except Exception:
+                        return img
+                else:
+                    # Otro error - intentar fallback
+                    try:
+                        repaired = _simple_inpaint(img_array, refined_mask)
+                        return Image.fromarray(repaired)
+                    except Exception:
+                        return img
         else:
             return img
 
