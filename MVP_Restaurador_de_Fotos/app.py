@@ -9,6 +9,11 @@ import warnings
 # Configuración para OpenCV en entorno headless (Streamlit Cloud)
 os.environ['QT_QPA_PLATFORM'] = 'offscreen'
 os.environ['OPENCV_IO_ENABLE_OPENEXR'] = '0'
+os.environ['OPENCV_IO_ENABLE_JASPER'] = '0'
+os.environ['OPENCV_IO_MAX_IMAGE_PIXELS'] = '0'
+os.environ['DISPLAY'] = ''
+os.environ['SDL_VIDEODRIVER'] = 'dummy'
+os.environ['OPENCV_HEADLESS'] = '1'
 
 # --- Configuración Streamlit (PRIMERO) ---
 st.set_page_config(page_title="Restaurador Fotográfico AI 🧠🎨",
