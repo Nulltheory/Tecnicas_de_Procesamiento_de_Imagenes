@@ -383,36 +383,36 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
 
         # Estrategia múltiple para detectar diferentes tipos de daños con parámetros más conservadores
 
-        # Estrategia 1: Detección de líneas/arañazos (bordes irregulares) - umbrales más altos
+        # Estrategia 1: Detección de líneas/arañazos (bordes irregulares) - umbrales balanceados
         gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-        edges = cv2.Canny(gray, 100, 200)  # Umbrales más altos para menos detección
-        kernel_line = np.ones((1, 3), np.uint8)  # Kernel más pequeño
+        edges = cv2.Canny(gray, 75, 175)  # Umbrales balanceados
+        kernel_line = np.ones((1, 4), np.uint8)  # Kernel mediano
         dilated_lines = cv2.dilate(edges, kernel_line, iterations=1)
 
-        # Estrategia 2: Detección de áreas irregulares (roturas) - blockSize más pequeño
-        thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 7, 2)
-        kernel_irregular = np.ones((3, 3), np.uint8)  # Kernel más pequeño
+        # Estrategia 2: Detección de áreas irregulares (roturas)
+        thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 9, 2)
+        kernel_irregular = np.ones((4, 4), np.uint8)
         irregular_areas = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel_irregular)
 
-        # Estrategia 3: Detección de variaciones de intensidad (posibles daños) - threshold más alto
+        # Estrategia 3: Detección de variaciones de intensidad (posibles daños)
         blur = cv2.GaussianBlur(gray, (3, 3), 0)
         laplacian = cv2.Laplacian(blur, cv2.CV_64F)
         damage_candidates = cv2.convertScaleAbs(laplacian)
-        _, damage_mask = cv2.threshold(damage_candidates, 50, 255, cv2.THRESH_BINARY)  # Threshold más alto
+        _, damage_mask = cv2.threshold(damage_candidates, 40, 255, cv2.THRESH_BINARY)
 
         # Combinar todas las estrategias
         combined_mask = cv2.bitwise_or(dilated_lines, irregular_areas)
         combined_mask = cv2.bitwise_or(combined_mask, damage_mask)
 
-        # Operaciones morfológicas más conservadoras
-        kernel_final = np.ones((3, 3), np.uint8)  # Kernel más pequeño
+        # Operaciones morfológicas balanceadas
+        kernel_final = np.ones((4, 4), np.uint8)
         combined_mask = cv2.morphologyEx(combined_mask, cv2.MORPH_CLOSE, kernel_final)
         combined_mask = cv2.morphologyEx(combined_mask, cv2.MORPH_OPEN, kernel_final)
 
         # Encontrar contornos y filtrar
         contours, _ = cv2.findContours(combined_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # Crear máscara refinada con criterios más conservadores
+        # Crear máscara refinada con criterios efectivos
         refined_mask = np.zeros_like(combined_mask)
         for contour in contours:
             area = cv2.contourArea(contour)
@@ -426,17 +426,17 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
                 else:
                     elongation = 1
 
-            # Criterios más conservadores para daños físicos
-            if area > 50 and (elongation > 5 or area < 500):  # Área mínima mayor, elongación mayor, área máxima menor
+            # Criterios efectivos para daños físicos
+            if area > 30 and (elongation > 3 or area < 800):  # Balance entre sensibilidad y precisión
                 cv2.drawContours(refined_mask, [contour], -1, 255, thickness=cv2.FILLED)
 
-        # Aplicar inpainting más suave
+        # Aplicar inpainting efectivo
         if np.any(refined_mask > 0):
-            # Inpainting con radios más pequeños para menos agresividad
-            inpainted = cv2.inpaint(img_array, refined_mask, inpaintRadius=5, flags=cv2.INPAINT_TELEA)
+            # Primer inpainting con NS para texturas complejas
+            inpainted = cv2.inpaint(img_array, refined_mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
 
-            # Segundo inpainting opcional solo si es necesario
-            inpainted = cv2.inpaint(inpainted, refined_mask, inpaintRadius=3, flags=cv2.INPAINT_TELEA)
+            # Segundo inpainting con TELEA para refinar
+            inpainted = cv2.inpaint(inpainted, refined_mask, inpaintRadius=4, flags=cv2.INPAINT_TELEA)
 
             return Image.fromarray(inpainted)
         else:
@@ -554,7 +554,7 @@ def colorizar_imagen(img: Image.Image) -> Image.Image:
         saturation_mean = np.mean(hsv[:, :, 1])
 
         # Si ya tiene saturación significativa, no colorizar
-        if saturation_mean > 20:
+        if saturation_mean > 50:
             return img
 
         # Convertir a LAB para mejor control de color
