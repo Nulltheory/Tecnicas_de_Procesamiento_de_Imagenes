@@ -437,15 +437,25 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
             if area > min_area and (elongation > min_elongation or area < max_area):
                 cv2.drawContours(refined_mask, [contour], -1, 255, thickness=cv2.FILLED)
 
-        # Aplicar inpainting efectivo
+        # Aplicar inpainting efectivo usando scikit-image (sin dependencia de OpenGL)
         if np.any(refined_mask > 0):
-            # Primer inpainting con NS para texturas complejas
-            inpainted = cv2.inpaint(img_array, refined_mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
-
-            # Segundo inpainting con TELEA para refinar
-            inpainted = cv2.inpaint(inpainted, refined_mask, inpaintRadius=4, flags=cv2.INPAINT_TELEA)
-
-            return Image.fromarray(inpainted)
+            try:
+                from skimage import inpaint_biharmonic
+                # Convertir máscara a booleano para scikit-image
+                mask_bool = refined_mask.astype(bool)
+                # Aplicar inpainting biarmónico (muy efectivo para texturas)
+                inpainted = inpaint_biharmonic(img_array, mask_bool, channel_axis=-1)
+                # Convertir de vuelta a uint8
+                inpainted = (inpainted * 255).astype(np.uint8)
+                return Image.fromarray(inpainted)
+            except ImportError:
+                # Fallback a cv2 si scikit-image no está disponible
+                try:
+                    inpainted = cv2.inpaint(img_array, refined_mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
+                    inpainted = cv2.inpaint(inpainted, refined_mask, inpaintRadius=4, flags=cv2.INPAINT_TELEA)
+                    return Image.fromarray(inpainted)
+                except Exception:
+                    return reducir_ruido_avanzado(img)
         else:
             return reducir_ruido_avanzado(img)
 
