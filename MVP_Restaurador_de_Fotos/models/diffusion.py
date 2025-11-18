@@ -432,10 +432,10 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
         # Estrategia múltiple para detectar diferentes tipos de daños con parámetros más conservadores
 
         # Ajustar sensibilidad: más alta = más agresiva
-        canny_min = max(20, 50 - sensitivity * 5)  # 20-50 (más sensible)
-        canny_max = min(220, 150 + sensitivity * 10)  # 150-220
+        canny_min = max(25, 50 - sensitivity * 5)  # 25-50
+        canny_max = min(200, 150 + sensitivity * 10)  # 150-200
         damage_thresh = max(15, 25 - sensitivity * 2)  # 15-25
-        min_area = max(5, 15 - sensitivity * 2)  # 5-15
+        min_area = max(10, 20 - sensitivity * 2)  # 10-20
         max_area = 1500 + sensitivity * 500  # 1500-2500
         min_elongation = max(1.5, 2 - sensitivity * 0.2)  # 1.5-2
 
@@ -498,8 +498,8 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
         if np.any(refined_mask > 0):
             # Intentar cv2.inpaint primero (método más avanzado disponible)
             try:
-                inpainted = cv2.inpaint(img_array, refined_mask, inpaintRadius=10, flags=cv2.INPAINT_NS)
-                inpainted = cv2.inpaint(inpainted, refined_mask, inpaintRadius=5, flags=cv2.INPAINT_TELEA)
+                inpainted = cv2.inpaint(img_array, refined_mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
+                inpainted = cv2.inpaint(inpainted, refined_mask, inpaintRadius=4, flags=cv2.INPAINT_TELEA)
                 return Image.fromarray(inpainted)
             except Exception as e:
                 if "libGL.so.1" in str(e):
