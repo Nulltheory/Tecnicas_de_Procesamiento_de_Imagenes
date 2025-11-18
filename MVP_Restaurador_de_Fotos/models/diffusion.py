@@ -292,6 +292,7 @@ def mejorar_color_contraste(img: Image.Image, intensity: float = 1.0) -> Image.I
     try:
         import cv2
         cv2.setUseOptimized(False)
+        cv2.ocl.setUseOpenCL(False)
         import numpy as np
 
         img_array = np.array(img)
@@ -337,6 +338,7 @@ def reducir_ruido_avanzado(img: Image.Image, strength: int = 3) -> Image.Image:
     try:
         import cv2
         cv2.setUseOptimized(False)
+        cv2.ocl.setUseOpenCL(False)
         import numpy as np
 
         img_array = np.array(img)
@@ -374,6 +376,7 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
     try:
         import cv2
         cv2.setUseOptimized(False)
+        cv2.ocl.setUseOpenCL(False)
         import numpy as np
 
         img_array = np.array(img)
