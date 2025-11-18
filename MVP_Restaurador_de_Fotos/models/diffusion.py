@@ -445,15 +445,13 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
         kernel_line = np.ones((1, 3 + sensitivity), np.uint8)  # 1x4 to 1x8
         dilated_lines = cv2.dilate(edges, kernel_line, iterations=1)
 
-        # Estrategia 1.5: Detección específica de líneas blancas largas
-        _, bright = cv2.threshold(gray, 230, 255, cv2.THRESH_BINARY)
-        kernel_line_white_h = np.ones((1, 15 + sensitivity * 3), np.uint8)  # Líneas horizontales largas
-        kernel_line_white_v = np.ones((15 + sensitivity * 3, 1), np.uint8)  # Líneas verticales largas
+        # Estrategia 1.5: Detección específica de líneas blancas
+        _, bright = cv2.threshold(gray, 180, 255, cv2.THRESH_BINARY)
+        kernel_line_white_h = np.ones((1, 8 + sensitivity), np.uint8)  # Líneas horizontales
+        kernel_line_white_v = np.ones((8 + sensitivity, 1), np.uint8)  # Líneas verticales
         white_lines_h = cv2.morphologyEx(bright, cv2.MORPH_OPEN, kernel_line_white_h)
         white_lines_v = cv2.morphologyEx(bright, cv2.MORPH_OPEN, kernel_line_white_v)
         white_lines = cv2.bitwise_or(white_lines_h, white_lines_v)
-        # Dilatar ligeramente para asegurar cobertura
-        white_lines = cv2.dilate(white_lines, np.ones((2, 2), np.uint8), iterations=1)
         dilated_lines = cv2.bitwise_or(dilated_lines, white_lines)
 
         # Estrategia 2: Detección de áreas irregulares (roturas)
@@ -496,26 +494,29 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
             if area > min_area and (elongation > min_elongation or area < max_area):
                 cv2.drawContours(refined_mask, [contour], -1, 255, thickness=cv2.FILLED)
 
-        # TEMPORAL: Deshabilitar fallbacks para ver error exacto de cv2.inpaint
+        # Aplicar inpainting usando el mejor modelo disponible (cv2.inpaint es el más avanzado)
         if np.any(refined_mask > 0):
-            print(f"DEBUG: Máscara detectada con {np.sum(refined_mask > 0)} píxeles")  # Debug
+            # Intentar cv2.inpaint primero (método más avanzado disponible)
             try:
-                print("DEBUG: Intentando cv2.inpaint NS...")  # Debug
                 inpainted = cv2.inpaint(img_array, refined_mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
-                print("DEBUG: cv2.inpaint NS completado")  # Debug
-                print("DEBUG: Intentando cv2.inpaint Telea...")  # Debug
                 inpainted = cv2.inpaint(inpainted, refined_mask, inpaintRadius=4, flags=cv2.INPAINT_TELEA)
-                print("DEBUG: cv2.inpaint Telea completado")  # Debug
                 return Image.fromarray(inpainted)
             except Exception as e:
-                # Mostrar error completo para debugging
-                import traceback
-                error_msg = f"Error en cv2.inpaint: {str(e)}\n{traceback.format_exc()}"
-                print(error_msg)  # Para logs
-                # Re-raise para que se propague
-                raise Exception(error_msg)
+                if "libGL.so.1" in str(e):
+                    # Problema con OpenGL en entorno headless - usar método alternativo avanzado
+                    try:
+                        inpainted = _simple_inpaint(img_array, refined_mask)
+                        return Image.fromarray(inpainted)
+                    except Exception:
+                        return reducir_ruido_avanzado(img)
+                else:
+                    # Otro error con cv2 - fallback
+                    try:
+                        inpainted = _simple_inpaint(img_array, refined_mask)
+                        return Image.fromarray(inpainted)
+                    except Exception:
+                        return reducir_ruido_avanzado(img)
         else:
-            print("DEBUG: No se detectó máscara de daños")  # Debug
             return reducir_ruido_avanzado(img)
 
     except Exception as e:
