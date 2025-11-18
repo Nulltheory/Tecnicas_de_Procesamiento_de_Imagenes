@@ -446,12 +446,14 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
         dilated_lines = cv2.dilate(edges, kernel_line, iterations=1)
 
         # Estrategia 1.5: Detección específica de líneas blancas largas
-        _, bright = cv2.threshold(gray, 210, 255, cv2.THRESH_BINARY)
-        kernel_line_white_h = np.ones((1, 8 + sensitivity * 2), np.uint8)  # Líneas horizontales
-        kernel_line_white_v = np.ones((8 + sensitivity * 2, 1), np.uint8)  # Líneas verticales
+        _, bright = cv2.threshold(gray, 230, 255, cv2.THRESH_BINARY)
+        kernel_line_white_h = np.ones((1, 15 + sensitivity * 3), np.uint8)  # Líneas horizontales largas
+        kernel_line_white_v = np.ones((15 + sensitivity * 3, 1), np.uint8)  # Líneas verticales largas
         white_lines_h = cv2.morphologyEx(bright, cv2.MORPH_OPEN, kernel_line_white_h)
         white_lines_v = cv2.morphologyEx(bright, cv2.MORPH_OPEN, kernel_line_white_v)
         white_lines = cv2.bitwise_or(white_lines_h, white_lines_v)
+        # Dilatar ligeramente para asegurar cobertura
+        white_lines = cv2.dilate(white_lines, np.ones((2, 2), np.uint8), iterations=1)
         dilated_lines = cv2.bitwise_or(dilated_lines, white_lines)
 
         # Estrategia 2: Detección de áreas irregulares (roturas)
