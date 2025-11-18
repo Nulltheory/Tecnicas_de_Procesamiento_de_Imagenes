@@ -175,6 +175,7 @@ def _fallback_enhancement(img: Image.Image, method: str) -> Image.Image:
     """Fallback enhancement usando técnicas básicas de OpenCV"""
     try:
         import cv2
+        cv2.setUseOptimized(False)
         img_np = np.array(img)
         # Aplicar bilateral filter para reducir ruido manteniendo bordes nítidos
         filtered = cv2.bilateralFilter(img_np, 9, 75, 75)
@@ -292,6 +293,7 @@ def mejorar_color_contraste(img: Image.Image, intensity: float = 1.0) -> Image.I
     """Mejora el color y contraste usando técnicas de procesamiento de imagen con intensidad configurable"""
     try:
         import cv2
+        cv2.setUseOptimized(False)
         import numpy as np
 
         img_array = np.array(img)
@@ -322,6 +324,7 @@ def mejorar_color_contraste(img: Image.Image, intensity: float = 1.0) -> Image.I
     except Exception as e:
         # Fallback simple
         import cv2
+        cv2.setUseOptimized(False)
         img_array = np.array(img)
         # Ajuste básico de contraste y brillo
         alpha = 1.0 + (intensity - 1.0) * 0.2  # 0.8-1.2
@@ -333,6 +336,7 @@ def reducir_ruido_avanzado(img: Image.Image, strength: int = 3) -> Image.Image:
     """Reducción avanzada de ruido usando múltiples técnicas con intensidad configurable"""
     try:
         import cv2
+        cv2.setUseOptimized(False)
         import numpy as np
 
         img_array = np.array(img)
@@ -358,6 +362,7 @@ def reducir_ruido_avanzado(img: Image.Image, strength: int = 3) -> Image.Image:
     except Exception as e:
         # Fallback simple
         import cv2
+        cv2.setUseOptimized(False)
         img_array = np.array(img)
         # Reducción simple de ruido
         denoised = cv2.bilateralFilter(img_array, 5, 50, 50)
@@ -367,6 +372,7 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
     """Eliminación agresiva de arañazos, roturas y daños físicos usando inpainting múltiple"""
     try:
         import cv2
+        cv2.setUseOptimized(False)
         import numpy as np
 
         img_array = np.array(img)
@@ -435,6 +441,7 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
     except Exception as e:
         # Fallback agresivo
         import cv2
+        cv2.setUseOptimized(False)
         img_array = np.array(img)
         # Múltiples pasadas de denoising muy agresivo
         result = cv2.bilateralFilter(img_array, 15, 150, 150)
@@ -446,6 +453,7 @@ def definir_bordes_foto(img: Image.Image) -> Image.Image:
     """Definir y mejorar los bordes de la fotografía para un aspecto más profesional"""
     try:
         import cv2
+        cv2.setUseOptimized(False)
         import numpy as np
 
         img_array = np.array(img)
@@ -485,6 +493,7 @@ def mejorar_contraste_adaptativo(img: Image.Image) -> Image.Image:
     """Mejora el contraste usando CLAHE (Contrast Limited Adaptive Histogram Equalization)"""
     try:
         import cv2
+        cv2.setUseOptimized(False)
         import numpy as np
 
         img_array = np.array(img)
@@ -508,6 +517,7 @@ def afinar_detalles(img: Image.Image) -> Image.Image:
     """Afina detalles usando un filtro de paso alto sutil"""
     try:
         import cv2
+        cv2.setUseOptimized(False)
         import numpy as np
 
         img_array = np.array(img)
@@ -530,6 +540,7 @@ def colorizar_imagen(img: Image.Image) -> Image.Image:
     """Colorización mejorada usando mapeo de color basado en referencias de piel y tonos"""
     try:
         import cv2
+        cv2.setUseOptimized(False)
         import numpy as np
 
         img_array = np.array(img)
@@ -597,6 +608,7 @@ def reparar_manchas_blancas(img: Image.Image, sensitivity: int = 5) -> Image.Ima
     """Reparación especializada de manchas blancas, agujeros y marcas en rostros"""
     try:
         import cv2
+        cv2.setUseOptimized(False)
         import numpy as np
 
         img_array = np.array(img)
@@ -664,6 +676,7 @@ def reparar_manchas_blancas(img: Image.Image, sensitivity: int = 5) -> Image.Ima
         try:
             # Fallback 1: CLAHE agresivo
             import cv2
+            cv2.setUseOptimized(False)
             img_array = np.array(img)
             lab = cv2.cvtColor(img_array, cv2.COLOR_RGB2LAB)
             clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(4,4))
@@ -702,6 +715,7 @@ def restaurar_imagen_sd(img: Image.Image, hf_token: str, prompt: str = "restaura
 
         # Prepare canny edge detection for ControlNet
         import cv2
+        cv2.setUseOptimized(False)
         canny_image = cv2.Canny(np.array(img), 100, 200)
         canny_image = Image.fromarray(canny_image)
 
@@ -720,6 +734,7 @@ def restaurar_imagen_sd(img: Image.Image, hf_token: str, prompt: str = "restaura
     except Exception as e:
         # Fallback to simple enhancement if SD fails
         import cv2
+        cv2.setUseOptimized(False)
         import numpy as np
 
         img_np = np.array(img)
