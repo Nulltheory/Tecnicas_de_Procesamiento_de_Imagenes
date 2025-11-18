@@ -383,42 +383,49 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
 
         # Estrategia múltiple para detectar diferentes tipos de daños con parámetros más conservadores
 
-        # Estrategia 1: Detección de líneas/arañazos (bordes irregulares) - más sensible
+        # Ajustar sensibilidad: más alta = más agresiva
+        canny_min = max(25, 50 - sensitivity * 5)  # 25-50
+        canny_max = min(200, 150 + sensitivity * 10)  # 150-200
+        damage_thresh = max(15, 25 - sensitivity * 2)  # 15-25
+        min_area = max(5, 15 - sensitivity * 2)  # 5-15
+        max_area = 1500 + sensitivity * 500  # 1500-2500
+        min_elongation = max(1.5, 2 - sensitivity * 0.2)  # 1.5-2
+
+        # Estrategia 1: Detección de líneas/arañazos (bordes irregulares)
         gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-        edges = cv2.Canny(gray, 50, 150)  # Umbrales más bajos para más detección
-        kernel_line = np.ones((1, 5), np.uint8)  # Kernel más grande
+        edges = cv2.Canny(gray, canny_min, canny_max)
+        kernel_line = np.ones((1, 3 + sensitivity), np.uint8)  # 1x4 to 1x8
         dilated_lines = cv2.dilate(edges, kernel_line, iterations=1)
 
         # Estrategia 2: Detección de áreas irregulares (roturas)
-        thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 11, 2)
-        kernel_irregular = np.ones((5, 5), np.uint8)
+        thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 7 + sensitivity * 2, 2)
+        kernel_irregular = np.ones((3 + sensitivity, 3 + sensitivity), np.uint8)  # 3x3 to 8x8
         irregular_areas = cv2.morphologyEx(thresh, cv2.MORPH_CLOSE, kernel_irregular)
 
         # Estrategia 3: Detección de variaciones de intensidad (posibles daños)
         blur = cv2.GaussianBlur(gray, (3, 3), 0)
         laplacian = cv2.Laplacian(blur, cv2.CV_64F)
         damage_candidates = cv2.convertScaleAbs(laplacian)
-        _, damage_mask = cv2.threshold(damage_candidates, 25, 255, cv2.THRESH_BINARY)  # Threshold más bajo
+        _, damage_mask = cv2.threshold(damage_candidates, damage_thresh, 255, cv2.THRESH_BINARY)
 
         # Combinar todas las estrategias
         combined_mask = cv2.bitwise_or(dilated_lines, irregular_areas)
         combined_mask = cv2.bitwise_or(combined_mask, damage_mask)
 
-        # Operaciones morfológicas más agresivas
-        kernel_final = np.ones((5, 5), np.uint8)
+        # Operaciones morfológicas
+        kernel_final = np.ones((3 + sensitivity * 2, 3 + sensitivity * 2), np.uint8)  # 3x3 to 13x13
         combined_mask = cv2.morphologyEx(combined_mask, cv2.MORPH_CLOSE, kernel_final)
         combined_mask = cv2.morphologyEx(combined_mask, cv2.MORPH_OPEN, kernel_final)
 
         # Encontrar contornos y filtrar
         contours, _ = cv2.findContours(combined_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
-        # Crear máscara refinada con criterios más sensibles
+        # Crear máscara refinada
         refined_mask = np.zeros_like(combined_mask)
         for contour in contours:
             area = cv2.contourArea(contour)
             perimeter = cv2.arcLength(contour, True)
             if perimeter > 0:
-                # Calcular elongación (para detectar líneas/arañazos)
                 rect = cv2.minAreaRect(contour)
                 width, height = rect[1]
                 if width > 0 and height > 0:
@@ -426,8 +433,8 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
                 else:
                     elongation = 1
 
-            # Criterios más sensibles para daños físicos
-            if area > 15 and (elongation > 2 or area < 1500):  # Más sensible
+            # Criterios ajustados por sensibilidad
+            if area > min_area and (elongation > min_elongation or area < max_area):
                 cv2.drawContours(refined_mask, [contour], -1, 255, thickness=cv2.FILLED)
 
         # Aplicar inpainting efectivo
