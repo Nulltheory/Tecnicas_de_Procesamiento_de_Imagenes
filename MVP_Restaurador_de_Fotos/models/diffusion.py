@@ -371,6 +371,54 @@ def reducir_ruido_avanzado(img: Image.Image, strength: int = 3) -> Image.Image:
         except:
             return img
 
+def _simple_inpaint(img_array: np.ndarray, mask: np.ndarray, radius: int = 5) -> np.ndarray:
+    """Inpainting avanzado usando promedio ponderado gaussiano de vecinos - mejor calidad"""
+    result = img_array.copy().astype(np.float32)
+    mask_bool = mask > 0
+
+    # Crear kernel gaussiano para ponderación
+    kernel_size = radius * 2 + 1
+    y_kernel, x_kernel = np.ogrid[-radius:radius+1, -radius:radius+1]
+    gaussian_kernel = np.exp(-(x_kernel**2 + y_kernel**2) / (2 * (radius/2)**2))
+    gaussian_kernel /= gaussian_kernel.sum()
+
+    # Para cada píxel dañado, usar interpolación ponderada
+    damaged_coords = np.where(mask_bool)
+
+    for y, x in zip(damaged_coords[0], damaged_coords[1]):
+        # Definir ventana alrededor del píxel
+        y_min = max(0, y - radius)
+        y_max = min(img_array.shape[0], y + radius + 1)
+        x_min = max(0, x - radius)
+        x_max = min(img_array.shape[1], x + radius + 1)
+
+        # Extraer ventana
+        window = result[y_min:y_max, x_min:x_max]
+        window_mask = mask_bool[y_min:y_max, x_min:x_max]
+
+        # Extraer kernel correspondiente
+        ky_min = radius - (y - y_min)
+        ky_max = radius + (y_max - y - 1) + 1
+        kx_min = radius - (x - x_min)
+        kx_max = radius + (x_max - x - 1) + 1
+        kernel_window = gaussian_kernel[ky_min:ky_max, kx_min:kx_max]
+
+        # Aplicar ponderación solo a píxeles no dañados
+        valid_mask = ~window_mask
+        if np.any(valid_mask):
+            weights = kernel_window * valid_mask
+            weights /= weights.sum() if weights.sum() > 0 else 1
+
+            # Calcular promedio ponderado por canal
+            weighted_sum = np.zeros(3, dtype=np.float32)
+            for c in range(3):
+                weighted_sum[c] = np.sum(window[:, :, c] * weights)
+
+            result[y, x] = weighted_sum
+
+    return result.astype(np.uint8)
+
+
 def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Image.Image:
     """Eliminación conservadora de arañazos, roturas y daños físicos usando inpainting múltiple"""
     try:
@@ -437,15 +485,28 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
             if area > min_area and (elongation > min_elongation or area < max_area):
                 cv2.drawContours(refined_mask, [contour], -1, 255, thickness=cv2.FILLED)
 
-        # Aplicar inpainting efectivo
+        # Aplicar inpainting usando el mejor modelo disponible (cv2.inpaint es el más avanzado)
         if np.any(refined_mask > 0):
-            # Primer inpainting con NS para texturas complejas
-            inpainted = cv2.inpaint(img_array, refined_mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
-
-            # Segundo inpainting con TELEA para refinar
-            inpainted = cv2.inpaint(inpainted, refined_mask, inpaintRadius=4, flags=cv2.INPAINT_TELEA)
-
-            return Image.fromarray(inpainted)
+            # Intentar cv2.inpaint primero (método más avanzado disponible)
+            try:
+                inpainted = cv2.inpaint(img_array, refined_mask, inpaintRadius=7, flags=cv2.INPAINT_NS)
+                inpainted = cv2.inpaint(inpainted, refined_mask, inpaintRadius=4, flags=cv2.INPAINT_TELEA)
+                return Image.fromarray(inpainted)
+            except Exception as e:
+                if "libGL.so.1" in str(e):
+                    # Problema con OpenGL en entorno headless - usar método alternativo avanzado
+                    try:
+                        inpainted = _simple_inpaint(img_array, refined_mask)
+                        return Image.fromarray(inpainted)
+                    except Exception:
+                        return reducir_ruido_avanzado(img)
+                else:
+                    # Otro error con cv2 - fallback
+                    try:
+                        inpainted = _simple_inpaint(img_array, refined_mask)
+                        return Image.fromarray(inpainted)
+                    except Exception:
+                        return reducir_ruido_avanzado(img)
         else:
             return reducir_ruido_avanzado(img)
 
