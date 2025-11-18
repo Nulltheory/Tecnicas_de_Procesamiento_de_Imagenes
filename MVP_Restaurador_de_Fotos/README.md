@@ -113,7 +113,7 @@ HF_TOKEN=tu-token-de-huggingface
 
 1. **Clona el repositorio:**
 ```bash
-git clone <url-del-repositorio>
+git clone <[https://github.com/Nulltheory/]>
 cd restaurador-mvp
 ```
 
@@ -312,4 +312,3 @@ Este proyecto está bajo la Licencia MIT. Ver archivo LICENSE para más detalles
 
 ---
 
-**Desarrollado con ❤️ para preservar la historia visual**
