@@ -371,7 +371,7 @@ def reducir_ruido_avanzado(img: Image.Image, strength: int = 3) -> Image.Image:
         except:
             return img
 
-def _simple_inpaint(img_array: np.ndarray, mask: np.ndarray, radius: int = 7) -> np.ndarray:
+def _simple_inpaint(img_array: np.ndarray, mask: np.ndarray, radius: int = 5) -> np.ndarray:
     """Inpainting avanzado usando promedio ponderado gaussiano de vecinos - mejor calidad"""
     result = img_array.copy().astype(np.float32)
     mask_bool = mask > 0
@@ -444,14 +444,6 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
         edges = cv2.Canny(gray, canny_min, canny_max)
         kernel_line = np.ones((1, 3 + sensitivity), np.uint8)  # 1x4 to 1x8
         dilated_lines = cv2.dilate(edges, kernel_line, iterations=1)
-
-        # Estrategia 1.5: Detección específica de rayas blancas (alto contraste)
-        _, bright_mask = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
-        kernel_bright = np.ones((1, 5 + sensitivity * 2), np.uint8)  # Detectar líneas blancas largas
-        bright_lines = cv2.morphologyEx(bright_mask, cv2.MORPH_OPEN, kernel_bright)
-        bright_lines = cv2.dilate(bright_lines, kernel_line, iterations=1)
-        # Combinar con edges
-        dilated_lines = cv2.bitwise_or(dilated_lines, bright_lines)
 
         # Estrategia 2: Detección de áreas irregulares (roturas)
         thresh = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY_INV, 7 + sensitivity * 2, 2)
@@ -697,12 +689,12 @@ def reparar_manchas_blancas(img: Image.Image, sensitivity: int = 5) -> Image.Ima
 
         # Estrategia 1: Detección de áreas blancas puras (agujeros/roturas)
         gray = cv2.cvtColor(img_array, cv2.COLOR_RGB2GRAY)
-        _, white_mask = cv2.threshold(gray, 240, 255, cv2.THRESH_BINARY)
+        _, white_mask = cv2.threshold(gray, 245, 255, cv2.THRESH_BINARY)
 
         # Estrategia 2: Detección de áreas sobreexpuestas (manchas blancas)
         hsv = cv2.cvtColor(img_array, cv2.COLOR_RGB2HSV)
-        lower_white = np.array([0, 0, 220])  # Más restrictivo
-        upper_white = np.array([180, 40, 255])
+        lower_white = np.array([0, 0, 235])  # Más restrictivo
+        upper_white = np.array([180, 30, 255])
         white_mask_hsv = cv2.inRange(hsv, lower_white, upper_white)
 
         # Combinar máscaras
@@ -712,7 +704,7 @@ def reparar_manchas_blancas(img: Image.Image, sensitivity: int = 5) -> Image.Ima
         # Calcular varianza local - áreas uniformes pueden ser daños
         blur = cv2.GaussianBlur(gray, (5, 5), 0)
         variance = cv2.Laplacian(blur, cv2.CV_64F).var()
-        low_detail_mask = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 2)
+        low_detail_mask = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, cv2.THRESH_BINARY, 11, 5)
 
         # Combinar con áreas de bajo detalle
         final_mask = cv2.bitwise_or(combined_mask, low_detail_mask)
