@@ -172,14 +172,12 @@ def restaurar_imagen_codeformer(img: Image.Image, fidelity: float = 0.5, upscale
 
 
 def _fallback_enhancement(img: Image.Image, method: str) -> Image.Image:
-    """Fallback enhancement usando técnicas básicas de OpenCV"""
+    """Fallback enhancement usando técnicas básicas de PIL"""
     try:
-        import cv2
-        cv2.setUseOptimized(False)
-        img_np = np.array(img)
-        # Aplicar bilateral filter para reducir ruido manteniendo bordes nítidos
-        filtered = cv2.bilateralFilter(img_np, 9, 75, 75)
-        return Image.fromarray(filtered)
+        from PIL import ImageFilter
+        # Aplicar un filtro de suavizado para reducir ruido
+        filtered = img.filter(ImageFilter.GaussianBlur(radius=1))
+        return filtered
     except Exception:
         # Si todo falla, devolver la imagen original
         return img
@@ -322,15 +320,17 @@ def mejorar_color_contraste(img: Image.Image, intensity: float = 1.0) -> Image.I
         return Image.fromarray(result)
 
     except Exception as e:
-        # Fallback simple
-        import cv2
-        cv2.setUseOptimized(False)
-        img_array = np.array(img)
-        # Ajuste básico de contraste y brillo
-        alpha = 1.0 + (intensity - 1.0) * 0.2  # 0.8-1.2
-        beta = int((intensity - 1.0) * 10)      # -10 to +10
-        adjusted = cv2.convertScaleAbs(img_array, alpha=alpha, beta=beta)
-        return Image.fromarray(adjusted)
+        # Fallback simple con PIL
+        try:
+            from PIL import ImageEnhance
+            # Ajuste básico de contraste y brillo
+            enhancer = ImageEnhance.Contrast(img)
+            adjusted = enhancer.enhance(1.0 + (intensity - 1.0) * 0.2)
+            brightness_enhancer = ImageEnhance.Brightness(adjusted)
+            adjusted = brightness_enhancer.enhance(1.0 + (intensity - 1.0) * 0.1)
+            return adjusted
+        except:
+            return img
 
 def reducir_ruido_avanzado(img: Image.Image, strength: int = 3) -> Image.Image:
     """Reducción avanzada de ruido usando múltiples técnicas con intensidad configurable"""
@@ -360,13 +360,14 @@ def reducir_ruido_avanzado(img: Image.Image, strength: int = 3) -> Image.Image:
         return Image.fromarray(denoised)
 
     except Exception as e:
-        # Fallback simple
-        import cv2
-        cv2.setUseOptimized(False)
-        img_array = np.array(img)
-        # Reducción simple de ruido
-        denoised = cv2.bilateralFilter(img_array, 5, 50, 50)
-        return Image.fromarray(denoised)
+        # Fallback simple con PIL
+        try:
+            from PIL import ImageFilter
+            # Reducción simple de ruido con blur suave
+            denoised = img.filter(ImageFilter.GaussianBlur(radius=0.5))
+            return denoised
+        except:
+            return img
 
 def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Image.Image:
     """Eliminación agresiva de arañazos, roturas y daños físicos usando inpainting múltiple"""
@@ -439,15 +440,15 @@ def inpainting_aranasos_agresivo(img: Image.Image, sensitivity: int = 5) -> Imag
             return reducir_ruido_avanzado(img)
 
     except Exception as e:
-        # Fallback agresivo
-        import cv2
-        cv2.setUseOptimized(False)
-        img_array = np.array(img)
-        # Múltiples pasadas de denoising muy agresivo
-        result = cv2.bilateralFilter(img_array, 15, 150, 150)
-        result = cv2.bilateralFilter(result, 11, 120, 120)
-        result = cv2.bilateralFilter(result, 7, 100, 100)
-        return Image.fromarray(result)
+        # Fallback agresivo con PIL
+        try:
+            from PIL import ImageFilter
+            # Múltiples pasadas de suavizado y sharpening
+            result = img.filter(ImageFilter.GaussianBlur(radius=2))
+            result = result.filter(ImageFilter.UnsharpMask(radius=1, percent=200, threshold=2))
+            return result
+        except:
+            return img
 
 def definir_bordes_foto(img: Image.Image) -> Image.Image:
     """Definir y mejorar los bordes de la fotografía para un aspecto más profesional"""
@@ -674,15 +675,11 @@ def reparar_manchas_blancas(img: Image.Image, sensitivity: int = 5) -> Image.Ima
     except Exception as e:
         # Fallback múltiple
         try:
-            # Fallback 1: CLAHE agresivo
-            import cv2
-            cv2.setUseOptimized(False)
-            img_array = np.array(img)
-            lab = cv2.cvtColor(img_array, cv2.COLOR_RGB2LAB)
-            clahe = cv2.createCLAHE(clipLimit=4.0, tileGridSize=(4,4))
-            lab[:, :, 0] = clahe.apply(lab[:, :, 0])
-            result = cv2.cvtColor(lab, cv2.COLOR_LAB2RGB)
-            return Image.fromarray(result)
+            # Fallback 1: Ecualización agresiva con PIL
+            from PIL import ImageOps
+            # Ecualización de histograma para mejorar contraste
+            result = ImageOps.equalize(img)
+            return result
         except:
             # Fallback 2: solo devolver original
             return img
@@ -733,17 +730,11 @@ def restaurar_imagen_sd(img: Image.Image, hf_token: str, prompt: str = "restaura
 
     except Exception as e:
         # Fallback to simple enhancement if SD fails
-        import cv2
-        cv2.setUseOptimized(False)
-        import numpy as np
-
-        img_np = np.array(img)
-        # Apply gentle sharpening and denoising
-        kernel = np.array([[-1,-1,-1], [-1, 9,-1], [-1,-1,-1]])  # Moderate sharpening
-        sharpened = cv2.filter2D(img_np, -1, kernel)
-        sharpened = np.clip(sharpened, 0, 255).astype(np.uint8)
-
-        # Apply denoising to reduce artifacts
-        denoised = cv2.bilateralFilter(sharpened, 7, 75, 75)
-
-        return Image.fromarray(denoised)
+        try:
+            from PIL import ImageFilter
+            # Apply gentle sharpening and denoising with PIL
+            sharpened = img.filter(ImageFilter.UnsharpMask(radius=1, percent=150, threshold=3))
+            denoised = sharpened.filter(ImageFilter.GaussianBlur(radius=0.5))
+            return denoised
+        except:
+            return img
