@@ -155,10 +155,6 @@ streamlit run app.py
 7. Leé el análisis detallado generado por IA
 8. Descargá la imagen restaurada si estás satisfecho
 
-![Paso 1: Subida](assets/ejemplos/ejemplo_antiguo.jpg)
-![Paso 2: Procesamiento](assets/ejemplos/ejemplo_antiguo.jpg)
-![Paso 3: Resultados](assets/ejemplos/ejemplo_antiguo.jpg)
-
 ## Decisiones de Diseño
 
 ### Por qué Streamlit
@@ -254,6 +250,7 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 ---
 
 **Trabajo Integrador N°2 - IFTS 24 - 2025**
+
 
 
 
