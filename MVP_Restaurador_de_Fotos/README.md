@@ -28,8 +28,11 @@ Lo que diferencia esta herramienta es su enfoque integral: no solo restaura, sin
 ## User Persona
 
 **Nombre**: Susana
+
 **Edad**: 60-70 años
+
 **Ocupación**: Jubilada (anteriormente administrativa)
+
 **Contexto tecnológico**: Nivel usuario básico. Usa fluidamente WhatsApp y Facebook para comunicarse con su familia. Sabe navegar por páginas web, pero se frustra e intimida fácilmente si una interfaz tiene "demasiados botones", opciones o jerga técnica que no entiende. No tiene idea de qué es la IA.
 
 **Problema actual**:
@@ -253,6 +256,7 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 ---
 
 **Trabajo Integrador N°2 - IFTS 24 - 2025**
+
 
 
 
