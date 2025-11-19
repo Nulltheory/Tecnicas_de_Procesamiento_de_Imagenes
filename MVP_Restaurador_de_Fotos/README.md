@@ -56,7 +56,7 @@ Usaría el sistema un fin de semana por la tarde, en su casa, usando la computad
 
 ## Demo
 
-![Demo Screenshot](assets/ejemplos/ejemplo_antiguo.jpg)
+![Demo Screenshot](assets/ejemplos/Preview.jpg)
 
 ## Características
 
@@ -254,6 +254,7 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 ---
 
 **Trabajo Integrador N°2 - IFTS 24 - 2025**
+
 
 
 
