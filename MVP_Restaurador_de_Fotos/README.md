@@ -58,8 +58,6 @@ Usaría el sistema un fin de semana por la tarde, en su casa, usando la computad
 
 ![Demo Screenshot](assets/ejemplos/ejemplo_antiguo.jpg)
 
-[Link al video demo (2-3 minutos)](https://example.com/demo-video)  <!-- Reemplazar con link real -->
-
 ## Características
 
 - Procesamiento con Real-ESRGAN, CodeFormer, GFPGAN y Stable Diffusion
@@ -256,6 +254,7 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 ---
 
 **Trabajo Integrador N°2 - IFTS 24 - 2025**
+
 
 
 
