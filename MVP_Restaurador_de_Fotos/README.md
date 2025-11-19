@@ -238,7 +238,7 @@ Año: 2025
 
 ## Licencia
 
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
+Este proyecto está bajo la Licencia MIT.
 
 ## Agradecimientos
 
@@ -250,6 +250,7 @@ Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) par
 ---
 
 **Trabajo Integrador N°2 - IFTS 24 - 2025**
+
 
 
 
